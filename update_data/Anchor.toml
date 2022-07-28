@@ -1,0 +1,12 @@
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+##[programs.localnet]
+##basic_1 = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+[programs.devnet]
+update_data = "AUJTadTPH9fCeV2egpcWfmJF2gSLTukXZd414RPRmuiX"
+
+[scripts]
+##test = "yarn run mocha -t 1000000 tests/*"
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
