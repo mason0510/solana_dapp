@@ -1,16 +1,41 @@
-import * as anchor from "@project-serum/anchor";
-import { Program } from "@project-serum/anchor";
-import { AuthorityControl } from "../target/types/authority_control";
+const assert = require("assert");
+const anchor = require("@project-serum/anchor");
 
-describe("authority_control", () => {
+describe("basic-4", () => {
+  const provider = anchor.AnchorProvider.env();
+
   // Configure the client to use the local cluster.
-  anchor.setProvider(anchor.AnchorProvider.env());
+  anchor.setProvider(provider);
 
-  const program = anchor.workspace.AuthorityControl as Program<AuthorityControl>;
+  const program = anchor.workspace.AuthorityControl;
 
-  it("Is initialized!", async () => {
-    // Add your test here.
-    const tx = await program.methods.initialize().rpc();
-    console.log("Your transaction signature", tx);
+  it("Is runs the constructor", async () => {
+    // #region ctor
+    // Initialize the program's state struct.
+    await program.state.rpc.new({
+      accounts: {
+        authority: provider.wallet.publicKey,
+      },
+    });
+    // #endregion ctor
+
+    // Fetch the state struct from the network.
+    // #region accessor
+    const state = await program.state.fetch();
+    // #endregion accessor
+
+    assert.ok(state.count.eq(new anchor.BN(0)));
+  });
+
+  it("Executes a method on the program", async () => {
+    // #region instruction
+    await program.state.rpc.increment({
+      accounts: {
+        authority: provider.wallet.publicKey,
+      },
+    });
+    // #endregion instruction
+    const state = await program.state.fetch();
+    assert.ok(state.count.eq(new anchor.BN(1)));
   });
 });
