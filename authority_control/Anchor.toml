@@ -1,14 +1,14 @@
 [features]
 seeds = false
 skip-lint = false
-[programs.devnet]
-hello_world = "BoEsGZys5GVBD7UGQugH4KX7iD1oHafGNmiQin7jni3N"
+[programs.localnet]
+authority_control = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "/Users/eddy/.config/solana/id.json"
 
 [scripts]

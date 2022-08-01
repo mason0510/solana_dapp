@@ -1,12 +1,12 @@
 use anchor_lang::prelude::*;
-
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("BoEsGZys5GVBD7UGQugH4KX7iD1oHafGNmiQin7jni3N");
 
 #[program]
 pub mod hello_world {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+    pub fn hello(_ctx: Context<Initialize>) -> Result<()> {
+        msg!("hello world!!!");
         Ok(())
     }
 }
