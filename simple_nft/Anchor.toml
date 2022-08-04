@@ -1,14 +1,13 @@
 [features]
 seeds = false
-skip-lint = false
-[programs.localnet]
+[programs.devnet]
 simple_nft = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "/Users/eddy/.config/solana/id.json"
 
 [scripts]
