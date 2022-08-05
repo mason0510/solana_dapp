@@ -1,0 +1,3 @@
+[submodule "create_collection_by_sugar/sugar"]
+	path = create_collection_by_sugar/sugar
+	url = https://github.com/metaplex-foundation/sugar.git
