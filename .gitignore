@@ -3,6 +3,8 @@ target
 *log
 .idea
 .openzeppelin
+**/*json
+**/*png
 
 packages/subgraph/subgraph.yaml
 packages/subgraph/generated

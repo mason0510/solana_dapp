@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "programs/*"
+    "programs/*",
+    "anchor_cli"
 ]
 
 [profile.release]
