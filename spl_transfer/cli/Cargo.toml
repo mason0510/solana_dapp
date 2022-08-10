@@ -1,0 +1,18 @@
+[package]
+name = "anchor_cli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+anchor-client = { version = "0.24.2", features = ["debug"] }
+##composite = { path = "../../tests/composite/programs/composite", features = ["no-entrypoint"] }
+##events = { path = "../../tests/events/programs/events", features = ["no-entrypoint"] }
+shellexpand = "2.1.0"
+anyhow = "1.0.32"
+rand = "0.7.3"
+clap = { version = "3.0.0-rc.0", features = ["derive"] }
+solana-sdk = "~1.9.29"
+spl_transfer = { path = "../programs/spl_transfer", features = ["no-entrypoint"] }
