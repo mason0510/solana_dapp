@@ -2,7 +2,7 @@
 seeds = false
 skip-lint = false
 [programs.devnet]
-mpl_token_transfer = "BGzwb76jQtDP9hpho7WDSzFSYSJUbbZq4Jkpggb4aiuA"
+mpl_token_transfer = "9st7EdZS5GgDjjKVFk7gR62Smp1YtirhdNCoQax7mxJP"
 
 [registry]
 url = "https://api.apr.dev"
