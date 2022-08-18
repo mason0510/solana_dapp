@@ -83,16 +83,6 @@ fn transfer_nft(client: &Client, params: Opts) -> Result<()> {
 
     // `Create` parameters.
     let counter = Keypair::generate(&mut OsRng);
-    let  (new_pda_account, _sandboxBump) =  Pubkey::find_program_address(
-        &[
-            &params.receiver_wallet.to_bytes(),
-            &Pubkey::from_str(MPL_PROGRAM_ID).unwrap().to_bytes(),
-            &params.token_address.to_bytes()
-        ],
-        &Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap()
-    );
-
-    println!("counter {}",new_pda_account);
     let authority = program.payer();
 
 
@@ -107,6 +97,17 @@ fn transfer_nft(client: &Client, params: Opts) -> Result<()> {
     let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
 
     let payer2 = read_keypair_file(&*shellexpand::tilde("~/work/repo/solana/solana_dapp/my_wallet/1.json")).expect("Example requires a keypair file");
+    let  (new_pda_account, _sandboxBump) =  Pubkey::find_program_address(
+        &[
+            &params.receiver_wallet.to_bytes(),
+            //&payer2.pubkey().to_bytes(),
+            &Pubkey::from_str(MPL_PROGRAM_ID).unwrap().to_bytes(),
+            &params.token_address.to_bytes()
+        ],
+        &Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap()
+    );
+
+    println!("counter {}，payer2——pubkey {}",new_pda_account,payer2.pubkey());
 
     let sender_token_account = get_token_account_by_wallet(payer.pubkey(),params.token_address).unwrap();
     let receiver_token_account = get_token_account_by_wallet(params.receiver_wallet,params.token_address);
@@ -126,11 +127,12 @@ fn transfer_nft(client: &Client, params: Opts) -> Result<()> {
     println!("start request");
     let call_res = program
         .request()
-        .instruction(
+      /*  .instruction(
                 //system_instruction::create_account()
             create_associated_token_account(&payer.pubkey(), &params.receiver_wallet, &params.token_address)
-        )
+        )*/
         .signer(&payer)
+        //.signer(&payer2)
         .accounts(kingwo_nft_accounts::Transfer {
             sender_authority: payer.pubkey(),
             sender_token_account,                                          //sender token account 9hUYW9s2c98GfjZb6JvW62BYEt3ryxGmeMBkhgSqmZtW
@@ -140,6 +142,7 @@ fn transfer_nft(client: &Client, params: Opts) -> Result<()> {
             rent:Pubkey::from_str("SysvarRent111111111111111111111111111111111").unwrap(),
             system_program:Pubkey::from_str("11111111111111111111111111111111").unwrap(),
             mint: params.token_address,
+            receiver_wallet: params.receiver_wallet
         })//对应anchor合约中的context里面的结构体
         .args(kingwo_nft_instruction::Transfer)//对应函数中的费context函数，结构体类型名对应函数名，成员名对应参数
        ;//.send()?;
