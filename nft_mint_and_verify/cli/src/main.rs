@@ -152,6 +152,8 @@ fn mint_nft(client: &Client, params: Opts) -> Result<()> {
         })
         .signer(&payer).signer(&mint_token).send()?;
 
+    println!("call_res1 {}", call_res);
+
 
     let call_res2 = program
         .request()
@@ -175,10 +177,45 @@ fn mint_nft(client: &Client, params: Opts) -> Result<()> {
         .signer(&payer).signer(&mint_token).send()?;
 
 
-    println!("call_res {}", call_res2);
+    println!("call_res2 {}", call_res2);
     //let counter_account: Counter = program.account(counter.pubkey())?;
 
     //assert_eq!(counter_account.count, 0);
+
+    /**
+         pub metadata_account: AccountInfo<'info>,
+    pub collection_authority: AccountInfo<'info>,
+    pub payer: AccountInfo<'info>,
+    pub update_authority: AccountInfo<'info>,
+    pub collection_mint: Account<'info, Mint>,
+    pub collection_metadata: AccountInfo<'info>,
+    pub collection_master_edition: AccountInfo<'info>,
+    pub system_program: AccountInfo<'info>,
+    pub rent: AccountInfo<'info>,
+     **/
+    println!("---{}",find_metadata_pda(&mint_token.pubkey()).to_string());
+    let call_res3 = program
+        .request()
+        .accounts(nft_accounts::SetAndVerifyCollection{
+            metadata_account: find_metadata_pda(&mint_token.pubkey()),
+            collection_authority: payer.pubkey(),
+            payer: payer.pubkey(),
+            update_authority: payer.pubkey(),
+            collection_mint: Pubkey::from_str("6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph").unwrap(),
+            collection_metadata: find_metadata_pda(&Pubkey::from_str("6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph").unwrap()),
+            collection_master_edition: find_master_edition_pda(&Pubkey::from_str("6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph").unwrap()),
+            system_program: Pubkey::from_str("11111111111111111111111111111111").unwrap(),
+            rent:Pubkey::from_str("SysvarRent111111111111111111111111111111111").unwrap(),
+            mpl_token_metadata:Pubkey::from_str("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s").unwrap(),
+
+        })
+        .args(nft_instructions::CollectionAdd{
+            title: "test1".to_string(),
+            uri: "https://bafybeiagelxwxuundel3rjqydvunf24llrg4e2a5l4fje27arsdzhdgaqu.ipfs.nftstorage.link/0.json".to_string(),
+            symbol: "KR".to_string()
+        })
+        .signer(&payer).signer(&payer).send()?;
+    println!("call_res3 {}", call_res3);
 
     println!("hello success!");
 

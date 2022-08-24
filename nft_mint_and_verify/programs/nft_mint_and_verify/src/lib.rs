@@ -33,8 +33,8 @@ pub mod nft_mint_and_verify {
         Ok(())
     }
 
-    pub fn collection_add(ctx: Context<MintNFT>, title: String, uri: String, symbol: String) -> Result<()> {
-        instructions::collection_add(ctx,title,symbol,uri)?;
+    pub fn collection_add(ctx: Context<SetAndVerifyCollection>, title: String, uri: String, symbol: String) -> Result<()> {
+        instructions::set_and_verify_collection(ctx)?;
         Ok(())
     }
 }
