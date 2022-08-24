@@ -29,15 +29,22 @@ use rand::rngs::OsRng;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::time::Duration;
-use anchor_client::anchor_lang::prelude::Pubkey;
+use anchor_client::anchor_lang::prelude::{Pubkey, Sysvar};
 use anchor_client::solana_client::nonce_utils::get_account;
 use anchor_client::solana_sdk::nonce::State;
 use mpl_token_metadata::pda::{find_master_edition_account, find_metadata_account};
 use mpl_token_metadata::state::{Metadata, PREFIX, TokenMetadataAccount};
 use solana_client::nonce_utils::get_account_with_commitment;
 use solana_sdk::account_info::AccountInfo;
-use spl_associated_token_account::create_associated_token_account;
+use spl_associated_token_account::{create_associated_token_account,get_associated_token_address};
 use spl_associated_token_account::solana_program::pubkey;
+
+//import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, createInitializeMintInstruction, MINT_SIZE } from '@solana/spl-token' // IGNORE THESE ERRORS IF ANY
+
+use spl_token::instruction::initialize_mint;
+use nft_mint_and_verify::instruction as nft_instructions;
+use nft_mint_and_verify::accounts as nft_accounts;
+
 
 #[derive(Parser, Debug)]
 pub struct Opts {
@@ -46,10 +53,10 @@ pub struct Opts {
     #[clap(long)]
     pub bridge_contract_pid: Pubkey,
     #[clap(long)]
-    pub receiver_wallet: Pubkey,
+    pub receiver: Pubkey,
 }
 
-const MPL_PROGRAM_ID: &'static str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const SPL_PROGRAM_ID: &'static str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 
 //const BRIDGE_CONTRACT: &'static str = "F1eqWRT9CUruLk9n4mX4fCYKDqSde9yLtveRaywx6vwn";
 //const TOKEN_ADDRESS: &'static str = "7YYNXbfwd5i5scpez18fTkEh2MRHJXoMHPffnWNcpFYf";
@@ -78,18 +85,6 @@ pub fn get_acc(address: Pubkey) -> solana_sdk::account::Account{
         .ok_or(ClientError::AccountNotFound).unwrap()
 }
 
-pub fn get_update_auth(){
-    let key = Pubkey::from_str("GHM5Z4jKr2jwC8iqERVoSn9u6W7jodDcWYcD7BmdYWA2").unwrap();
-    let mut account3 = get_acc(key.clone());
-    let account4 = AccountInfo::new(&key,
-                                    false, false,
-                                    &mut account3.lamports, account3.data.as_mut_slice(),
-                                    &account3.owner,
-                                    account3.executable, account3.rent_epoch);
-    println!("account1_info_key {}",account4.owner);
-    let acc5 : Metadata = Metadata::from_account_info(&account4).unwrap();
-    println!("account1_info_key {}",acc5.update_authority);
-}
 
 // This example assumes a local validator is running with the programs
 // deployed at the addresses given by the CLI args.
@@ -115,66 +110,72 @@ fn main() -> Result<()> {
     //let account2 : solana_sdk::account::Account = program.account(Pubkey::from_str("GHM5Z4jKr2jwC8iqERVoSn9u6W7jodDcWYcD7BmdYWA2").unwrap()).unwrap();
     //let test2 = AccountInfo::from("1");
     //let test3 : Metadata = Metadata::from_account_info(&account2).unwrap();
-    get_update_auth();
-    verify_nft_collection(&client, opts)?;
+    mint_nft(&client, opts)?;
     Ok(())
 }
 
-fn verify_nft_collection(client: &Client, params: Opts) -> Result<()> {
+fn mint_nft(client: &Client, params: Opts) -> Result<()> {
     let program = client.program(params.bridge_contract_pid); //BGzwb76jQtDP9hpho7WDSzFSYSJUbbZq4Jkpggb4aiuA
     let authority = program.payer();
     let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
-    println!("start request");
-    /***
-    [writable] Metadata account
-[signer] Collection Update authority
-[signer] payer
-`[] Update Authority of Collection NFT and NFT
-[] Mint of the Collection
-[] Metadata Account of the Collection
-[] MasterEdition2 Account of the Collection Token
-
- ctx.accounts.token_metadata_program.key(),
-            ctx.accounts.metadata.key(),
-            collection_pda.key(),
-            ctx.accounts.payer.key(),
-
-            ctx.accounts.authority.key(),
-            collection_mint.key(),
-            ctx.accounts.collection_metadata.key(),
-            ctx.accounts.collection_master_edition.key(),
-            Some(ctx.accounts.collection_authority_record.key()),
-
-             program_id: Pubkey,
-    metadata: Pubkey,
-    collection_authority: Pubkey,
-    payer: Pubkey,
-
-    collection_mint: Pubkey,
-    collection: Pubkey,
-    collection_master_edition_account: Pubkey,
-    collection_authority_record: Option<Pubkey>,
-
-    */
+    let mint_token = Keypair::new();
+    println!("mintkey {}", mint_token.pubkey().to_string());
     println!("mpl_token_metadata::ID {}",mpl_token_metadata::ID);
     println!("spl_token::ID {}",spl_token::id());
     let collection_mint_key = Pubkey::from_str("6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph").unwrap();
+    let mint_size = 1461600u64; //0.0014616
+    let mint_space = 82u64;
+    let to_address = Pubkey::from_str("677NzkzkDKT9wXDMXGPUvbFp1T7XzJtZZxcRaBAaSvNa").unwrap();
+    let spl_program_key = Pubkey::from_str(SPL_PROGRAM_ID).unwrap();
+    let nft_token_account = get_associated_token_address(&to_address,&mint_token.pubkey());
+    let metadata_address = find_metadata_pda(&mint_token.pubkey());
+    let edition_address = find_master_edition_pda(&mint_token.pubkey());
+
     let call_res = program
         .request()
-      .instruction(
-            verify_collection(mpl_token_metadata::ID,
-                                      Pubkey::from_str("GHM5Z4jKr2jwC8iqERVoSn9u6W7jodDcWYcD7BmdYWA2").unwrap(),
-                                      payer.pubkey(),
-                                      payer.pubkey(),
-                                      //Pubkey::from_str("5wEmePkkXAWYYvvWQDv4Mbenma1jWvzCbt3rK9ihmrqH").unwrap(),
-                                      collection_mint_key.clone(),
-                                      find_metadata_pda(&collection_mint_key),
-                                      find_master_edition_pda(&collection_mint_key),
-                                      None)
-            //create_associated_token_account(&payer.pubkey(), &params.receiver_wallet, &params.token_address)
-        ).signer(&payer).signer(&payer);
+        .accounts(nft_accounts::MintNFT{
+            metadata: metadata_address,
+            master_edition: edition_address,
+            mint: mint_token.pubkey(),
+            token_account: nft_token_account,
+            mint_authority: payer.pubkey(),
+            rent: Pubkey::from_str("SysvarRent111111111111111111111111111111111").unwrap(),
+            system_program: Pubkey::from_str("11111111111111111111111111111111").unwrap(),
+            token_program: Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap(),
+            associated_token_program: Pubkey::from_str("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL").unwrap(),
+            token_metadata_program: Pubkey::from_str("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s").unwrap(),
+        })
+        .args(nft_instructions::AccountInit{
+            title: "test1".to_string(),
+            uri: "https://bafybeiagelxwxuundel3rjqydvunf24llrg4e2a5l4fje27arsdzhdgaqu.ipfs.nftstorage.link/0.json".to_string(),
+            symbol: "KR".to_string()
+        })
+        .signer(&payer).signer(&mint_token).send()?;
 
-    println!("call_res {}", call_res.send()?);
+
+    let call_res2 = program
+        .request()
+        .accounts(nft_accounts::MintNFT{
+            metadata: metadata_address,
+            master_edition: edition_address,
+            mint: mint_token.pubkey(),
+            token_account: nft_token_account,
+            mint_authority: payer.pubkey(),
+            rent: Pubkey::from_str("SysvarRent111111111111111111111111111111111").unwrap(),
+            system_program: Pubkey::from_str("11111111111111111111111111111111").unwrap(),
+            token_program: Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap(),
+            associated_token_program: Pubkey::from_str("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL").unwrap(),
+            token_metadata_program: Pubkey::from_str("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s").unwrap(),
+        })
+        .args(nft_instructions::MintTo{
+            title: "test1".to_string(),
+            uri: "https://bafybeiagelxwxuundel3rjqydvunf24llrg4e2a5l4fje27arsdzhdgaqu.ipfs.nftstorage.link/0.json".to_string(),
+            symbol: "KR".to_string()
+        })
+        .signer(&payer).signer(&mint_token).send()?;
+
+
+    println!("call_res {}", call_res2);
     //let counter_account: Counter = program.account(counter.pubkey())?;
 
     //assert_eq!(counter_account.count, 0);
