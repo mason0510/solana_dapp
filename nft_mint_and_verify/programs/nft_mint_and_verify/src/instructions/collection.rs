@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
+use anchor_spl::{associated_token, token};
 use anchor_spl::token::{Mint};
 use mpl_token_metadata::{
     instruction,
 };
-use crate::SetAndVerifyCollection;
+use crate::{SetAndVerifyCollection, transfer};
 
 
 pub fn set_and_verify_collection(ctx: Context<SetAndVerifyCollection>) -> Result<()> {
@@ -19,28 +20,6 @@ pub fn set_and_verify_collection(ctx: Context<SetAndVerifyCollection>) -> Result
         ctx.accounts.collection_master_edition.key(),
         None,
     );
-    /***
-
-       pub metadata_account: AccountInfo<'info>,
-    /// CHECK:?
-    pub collection_authority: AccountInfo<'info>,
-    /// CHECK:?
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    /// CHECK:?
-    #[account(mut)]
-    pub update_authority: Signer<'info>,
-    /// CHECK:?
-    pub collection_mint: Account<'info, Mint>,
-    /// CHECK:?
-    pub collection_metadata: AccountInfo<'info>,
-    /// CHECK:?
-    pub collection_master_edition: AccountInfo<'info>,
-    /// CHECK:?
-    pub system_program: AccountInfo<'info>,
-    /// CHECK:?
-    pub rent: AccountInfo<'info>,
-    */
     solana_program::program::invoke_signed(
         &ix,
         &[
@@ -53,9 +32,48 @@ pub fn set_and_verify_collection(ctx: Context<SetAndVerifyCollection>) -> Result
                 ctx.accounts.collection_master_edition.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
             ctx.accounts.rent.to_account_info(),
-            ctx.accounts.mpl_token_metadata.to_account_info()
+            ctx.accounts.spl_token_metadata.to_account_info()
 
         ],
         &[],
-    ).map_err(Into::into)
+    ).unwrap();
+
+
+    transfer(ctx)
+
+
+    /*msg!("Creating user token account...");
+    msg!("User Token Address: {}", &ctx.accounts.receiver_token_account.key());
+    associated_token::create(
+        CpiContext::new(
+            ctx.accounts.associated_token_program.to_account_info(),
+            associated_token::Create {
+                payer: ctx.accounts.payer.to_account_info(),
+                associated_token: ctx.accounts.receiver_token_account.to_account_info(),
+                authority: ctx.accounts.receiver_wallet.to_account_info(),
+                mint: ctx.accounts.mint_account.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                token_program: ctx.accounts.spl_token_program.to_account_info(),
+                rent: ctx.accounts.rent.to_account_info(),
+            },
+        ),
+    )?;
+
+    msg!("Transferring NFT...");
+    msg!("sender Token Address: {}", &ctx.accounts.sender_token_account.key());
+    msg!("receiver Token Address: {}", &ctx.accounts.receiver_token_account.key());
+    token::transfer(
+        CpiContext::new(
+            ctx.accounts.spl_token_program.to_account_info(),
+            token::Transfer {
+                from: ctx.accounts.sender_token_account.to_account_info(),
+                to: ctx.accounts.receiver_token_account.to_account_info(),
+                authority: ctx.accounts.payer.to_account_info(),
+            }
+        ),
+        1
+    )?;
+    msg!("NFT transferred successfully.");
+    Ok(())*/
+
 }

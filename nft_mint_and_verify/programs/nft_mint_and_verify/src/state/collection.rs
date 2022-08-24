@@ -24,11 +24,28 @@ pub struct SetAndVerifyCollection<'info> {
     pub collection_master_edition: AccountInfo<'info>,
     /// CHECK:?
     pub rent: AccountInfo<'info>,
-   // pub rent: Sysvar<'info, Rent>,
-   /// CHECK:?
-   pub system_program: AccountInfo<'info>,
-   // pub system_program: Program<'info, System>,
-
+    // pub rent: Sysvar<'info, Rent>,
     /// CHECK:?
-    pub mpl_token_metadata: AccountInfo<'info>
+    pub system_program: AccountInfo<'info>,
+    // pub system_program: Program<'info, System>,
+    /// CHECK:?
+    pub spl_token_metadata: AccountInfo<'info>,
+    /// CHECK:?
+    pub spl_token_program: AccountInfo<'info>,
+
+    //for transfer
+    /// CHECK:?
+    #[account(mut)]
+    pub mint_account: AccountInfo<'info>,
+    /// CHECK:?
+    #[account(mut)]
+    pub sender_token_account: AccountInfo<'info>,
+    /// CHECK:?
+    #[account(mut)]
+    pub receiver_token_account:UncheckedAccount<'info>,
+    /// CHECK: We're about to create this with Anchor
+    #[account(mut)]
+    pub receiver_wallet: AccountInfo<'info>,
+    pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
+
 }

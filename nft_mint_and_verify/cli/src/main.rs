@@ -29,6 +29,7 @@ use rand::rngs::OsRng;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::time::Duration;
+use anchor_client::anchor_lang::Key;
 use anchor_client::anchor_lang::prelude::{Pubkey, Sysvar};
 use anchor_client::solana_client::nonce_utils::get_account;
 use anchor_client::solana_sdk::nonce::State;
@@ -128,6 +129,8 @@ fn mint_nft(client: &Client, params: Opts) -> Result<()> {
     let to_address = Pubkey::from_str("677NzkzkDKT9wXDMXGPUvbFp1T7XzJtZZxcRaBAaSvNa").unwrap();
     let spl_program_key = Pubkey::from_str(SPL_PROGRAM_ID).unwrap();
     let nft_token_account = get_associated_token_address(&to_address,&mint_token.pubkey());
+    let receiver_token_account = get_associated_token_address(&params.receiver,&mint_token.pubkey());
+
     let metadata_address = find_metadata_pda(&mint_token.pubkey());
     let edition_address = find_master_edition_pda(&mint_token.pubkey());
 
@@ -206,7 +209,15 @@ fn mint_nft(client: &Client, params: Opts) -> Result<()> {
             collection_master_edition: find_master_edition_pda(&Pubkey::from_str("6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph").unwrap()),
             system_program: Pubkey::from_str("11111111111111111111111111111111").unwrap(),
             rent:Pubkey::from_str("SysvarRent111111111111111111111111111111111").unwrap(),
-            mpl_token_metadata:Pubkey::from_str("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s").unwrap(),
+            spl_token_metadata:Pubkey::from_str("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s").unwrap(),
+
+            //for transfer
+            mint_account: mint_token.pubkey(),
+            sender_token_account: nft_token_account,
+            receiver_token_account: receiver_token_account,
+            receiver_wallet: params.receiver,
+            associated_token_program: Pubkey::from_str("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL").unwrap(),
+            spl_token_program: Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap()
 
         })
         .args(nft_instructions::CollectionAdd{
