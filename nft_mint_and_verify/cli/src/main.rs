@@ -152,10 +152,9 @@ fn mint_nft(client: &Client, params: Opts) -> Result<()> {
             title: "test1".to_string(),
             uri: "https://bafybeiagelxwxuundel3rjqydvunf24llrg4e2a5l4fje27arsdzhdgaqu.ipfs.nftstorage.link/0.json".to_string(),
             symbol: "KR".to_string()
-        })
-        .signer(&payer).signer(&mint_token).send()?;
+        });
 
-    println!("call_res1 {}", call_res);
+    println!("call_res1 {}", call_res.instructions()?.len());
 
 
     let call_res2 = program
@@ -176,27 +175,10 @@ fn mint_nft(client: &Client, params: Opts) -> Result<()> {
             title: "test1".to_string(),
             uri: "https://bafybeiagelxwxuundel3rjqydvunf24llrg4e2a5l4fje27arsdzhdgaqu.ipfs.nftstorage.link/0.json".to_string(),
             symbol: "KR".to_string()
-        })
-        .signer(&payer).signer(&mint_token).send()?;
+        });
 
+    println!("call_res2 {}", call_res2.instructions()?.len());
 
-    println!("call_res2 {}", call_res2);
-    //let counter_account: Counter = program.account(counter.pubkey())?;
-
-    //assert_eq!(counter_account.count, 0);
-
-    /**
-         pub metadata_account: AccountInfo<'info>,
-    pub collection_authority: AccountInfo<'info>,
-    pub payer: AccountInfo<'info>,
-    pub update_authority: AccountInfo<'info>,
-    pub collection_mint: Account<'info, Mint>,
-    pub collection_metadata: AccountInfo<'info>,
-    pub collection_master_edition: AccountInfo<'info>,
-    pub system_program: AccountInfo<'info>,
-    pub rent: AccountInfo<'info>,
-     **/
-    println!("---{}",find_metadata_pda(&mint_token.pubkey()).to_string());
     let call_res3 = program
         .request()
         .accounts(nft_accounts::SetAndVerifyCollection{
@@ -224,9 +206,27 @@ fn mint_nft(client: &Client, params: Opts) -> Result<()> {
             title: "test1".to_string(),
             uri: "https://bafybeiagelxwxuundel3rjqydvunf24llrg4e2a5l4fje27arsdzhdgaqu.ipfs.nftstorage.link/0.json".to_string(),
             symbol: "KR".to_string()
-        })
-        .signer(&payer).signer(&payer).send()?;
-    println!("call_res3 {}", call_res3);
+        });
+    println!("call_res3 {}", call_res3.instructions()?.len());
+
+
+
+    let call_res_all = program
+        .request()
+        .instruction(
+            call_res.instructions()?.first().unwrap().to_owned()
+        )
+        .instruction(
+            call_res2.instructions()?.first().unwrap().to_owned()
+        )
+        .instruction(
+            call_res3.instructions()?.first().unwrap().to_owned()
+        )
+        .signer(&mint_token)
+        .signer(&payer)
+        .send()?;
+    println!("call_res_akk {}", call_res_all);
+
 
     println!("hello success!");
 
