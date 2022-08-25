@@ -13,10 +13,9 @@ use {
         instruction as token_instruction,
     },
 };
+use crate::AccountInit;
 
-use crate::state::MintNFT;
-
-pub fn account_init( ctx: Context<MintNFT>) -> Result<()>{
+pub fn account_init( ctx: Context<AccountInit>) -> Result<()>{
     msg!("Creating mint account...");
     msg!("Mint: {}", &ctx.accounts.mint.key());
     system_program::create_account(

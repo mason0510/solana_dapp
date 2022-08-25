@@ -20,20 +20,17 @@ pub mod nft_mint_and_verify {
     use crate::instructions;
     use super::*;
 
-
-
-
     pub fn mint_to(ctx: Context<MintNFT>, title: String, uri: String, symbol: String) -> Result<()> {
         mint_nft(ctx,title,symbol,uri)?;
         Ok(())
     }
 
-    pub fn account_init(ctx: Context<MintNFT>, title: String, uri: String, symbol: String) -> Result<()> {
+    pub fn account_init(ctx: Context<AccountInit>) -> Result<()> {
         instructions::account_init(ctx)?;
         Ok(())
     }
 
-    pub fn collection_add(ctx: Context<SetAndVerifyCollection>, title: String, uri: String, symbol: String) -> Result<()> {
+    pub fn collection_add(ctx: Context<SetAndVerifyCollection>) -> Result<()> {
         instructions::set_and_verify_collection(ctx)?;
         Ok(())
     }

@@ -20,7 +20,6 @@ pub struct MintNFT<'info> {
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, token::Token>,
-    pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
-    /// CHECK: Metaplex will check this
+    /// CHECK: We're about to create this with Anchor
     pub token_metadata_program: UncheckedAccount<'info>,
 }
