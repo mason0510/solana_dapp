@@ -27,7 +27,7 @@ pub fn account_init( ctx: Context<MintNFT>) -> Result<()>{
                 to: ctx.accounts.mint.to_account_info(),
             },
         ),
-        10000000,
+        1461600,
         82,
         &ctx.accounts.token_program.key(),
     )?;
