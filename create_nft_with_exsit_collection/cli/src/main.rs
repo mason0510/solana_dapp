@@ -4,7 +4,7 @@ use anchor_client::solana_sdk::signature::read_keypair_file;
 use anchor_client::solana_sdk::signature::{Keypair, Signer};
 use anchor_client::solana_sdk::system_instruction;
 use anchor_client::{Client, ClientError, Cluster, EventContext};
-use mpl_token_metadata::instruction::{set_and_verify_collection,verify_collection};
+use mpl_token_metadata::instruction::{set_and_verify_collection, update_metadata_accounts, update_metadata_accounts_v2, verify_collection};
 
 use solana_client::{
     rpc_client::RpcClient,
@@ -33,9 +33,10 @@ use anchor_client::anchor_lang::prelude::Pubkey;
 use anchor_client::solana_client::nonce_utils::get_account;
 use anchor_client::solana_sdk::nonce::State;
 use mpl_token_metadata::pda::{find_master_edition_account, find_metadata_account};
-use mpl_token_metadata::state::{Metadata, PREFIX, TokenMetadataAccount};
+use mpl_token_metadata::state::{DataV2, Metadata, PREFIX, TokenMetadataAccount};
 use solana_client::nonce_utils::get_account_with_commitment;
 use solana_sdk::account_info::AccountInfo;
+use solana_sdk::instruction::Instruction;
 use spl_associated_token_account::create_associated_token_account;
 use spl_associated_token_account::solana_program::pubkey;
 
@@ -49,12 +50,15 @@ pub struct Opts {
     pub receiver_wallet: Pubkey,
 }
 
-const MPL_PROGRAM_ID: &'static str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+const SPL_PROGRAM_ID: &'static str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 
 //const BRIDGE_CONTRACT: &'static str = "F1eqWRT9CUruLk9n4mX4fCYKDqSde9yLtveRaywx6vwn";
 //const TOKEN_ADDRESS: &'static str = "7YYNXbfwd5i5scpez18fTkEh2MRHJXoMHPffnWNcpFYf";
 const SENDER: &'static str = "9hUYW9s2c98GfjZb6JvW62BYEt3ryxGmeMBkhgSqmZtW";
 const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: &'static str = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+const SYSTEM_PROGRAM_ID: &'static str = "11111111111111111111111111111111";
+const SYSTEM_RENT_ID: &'static str = "SysvarRent111111111111111111111111111111111";
+const MPL_TOKEN_METADATA_ACCOUNT: &'static str = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
 
 pub fn find_metadata_pda(mint: &Pubkey) -> Pubkey {
     let (pda, _bump) = find_metadata_account(mint);
@@ -79,16 +83,20 @@ pub fn get_acc(address: Pubkey) -> solana_sdk::account::Account{
 }
 
 pub fn get_update_auth(){
-    let key = Pubkey::from_str("GHM5Z4jKr2jwC8iqERVoSn9u6W7jodDcWYcD7BmdYWA2").unwrap();
-    let mut account3 = get_acc(key.clone());
-    let account4 = AccountInfo::new(&key,
+    let mint_key = Pubkey::from_str("6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph").unwrap();
+    let metadata_account = find_metadata_pda(&mint_key);
+    println!("metadata_account {}",metadata_account);
+
+    //let metadata_account = Pubkey::from_str("GHM5Z4jKr2jwC8iqERVoSn9u6W7jodDcWYcD7BmdYWA2").unwrap();
+    let mut account3 = get_acc(metadata_account.clone());
+    let account4 = AccountInfo::new(&metadata_account,
                                     false, false,
                                     &mut account3.lamports, account3.data.as_mut_slice(),
                                     &account3.owner,
                                     account3.executable, account3.rent_epoch);
     println!("account1_info_key {}",account4.owner);
     let acc5 : Metadata = Metadata::from_account_info(&account4).unwrap();
-    println!("account1_info_key {}",acc5.update_authority);
+    println!("account1_info_key {:?}",acc5);
 }
 
 // This example assumes a local validator is running with the programs
@@ -98,7 +106,7 @@ fn main() -> Result<()> {
     let opts = Opts::parse();
 
     // Wallet and cluster params.
-    let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json"))
+    let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id_1.json"))
         .expect("Example requires a keypair file");
     let url = Cluster::Custom(
         "https://api.devnet.solana.com".to_string(),
@@ -159,20 +167,40 @@ fn verify_nft_collection(client: &Client, params: Opts) -> Result<()> {
     println!("mpl_token_metadata::ID {}",mpl_token_metadata::ID);
     println!("spl_token::ID {}",spl_token::id());
     let collection_mint_key = Pubkey::from_str("6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph").unwrap();
+
+    let ix_1 = update_metadata_accounts_v2(
+        Pubkey::from_str(MPL_TOKEN_METADATA_ACCOUNT).unwrap(),
+        find_metadata_pda(&Pubkey::from_str("6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph").unwrap()),
+        payer.pubkey(),
+        None,
+        Some(DataV2 {
+            name: "kingwo's memorise collection".to_string(),
+            symbol: "KM".to_string(),
+            uri: "https://nftstorage.link/ipfs/bafybeiewf455qyr56n2wkgn43p5e2c3ymh6wp6lm3ocd5dt5ear6bdwbw4/collection.json".to_string(),
+            seller_fee_basis_points: 0u16,
+            creators: None,
+            collection: None,
+            uses: None
+        }),
+        None,
+        None,
+    );
+
+    let ix_2 = verify_collection(mpl_token_metadata::ID,
+                                 Pubkey::from_str("GHM5Z4jKr2jwC8iqERVoSn9u6W7jodDcWYcD7BmdYWA2").unwrap(),
+                                 payer.pubkey(),
+                                 payer.pubkey(),
+                                 //Pubkey::from_str("5wEmePkkXAWYYvvWQDv4Mbenma1jWvzCbt3rK9ihmrqH").unwrap(),
+                                 collection_mint_key.clone(),
+                                 find_metadata_pda(&collection_mint_key),
+                                 find_master_edition_pda(&collection_mint_key),
+                                 None);
     let call_res = program
         .request()
       .instruction(
-            verify_collection(mpl_token_metadata::ID,
-                                      Pubkey::from_str("GHM5Z4jKr2jwC8iqERVoSn9u6W7jodDcWYcD7BmdYWA2").unwrap(),
-                                      payer.pubkey(),
-                                      payer.pubkey(),
-                                      //Pubkey::from_str("5wEmePkkXAWYYvvWQDv4Mbenma1jWvzCbt3rK9ihmrqH").unwrap(),
-                                      collection_mint_key.clone(),
-                                      find_metadata_pda(&collection_mint_key),
-                                      find_master_edition_pda(&collection_mint_key),
-                                      None)
+            ix_1 as Instruction
             //create_associated_token_account(&payer.pubkey(), &params.receiver_wallet, &params.token_address)
-        ).signer(&payer).signer(&payer);
+        ).signer(&payer);
 
     println!("call_res {}", call_res.send()?);
     //let counter_account: Counter = program.account(counter.pubkey())?;
