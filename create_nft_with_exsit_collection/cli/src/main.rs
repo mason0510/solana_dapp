@@ -172,7 +172,7 @@ fn verify_nft_collection(client: &Client, params: Opts) -> Result<()> {
         Pubkey::from_str(MPL_TOKEN_METADATA_ACCOUNT).unwrap(),
         find_metadata_pda(&Pubkey::from_str("6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph").unwrap()),
         payer.pubkey(),
-        None,
+        Some(Pubkey::from_str("EKJcAYJsKD64KpQVTSSEg3Ty1yaqJgq9NezRH1xsJADt").unwrap()),
         Some(DataV2 {
             name: "kingwo's memorise collection".to_string(),
             symbol: "KM".to_string(),
