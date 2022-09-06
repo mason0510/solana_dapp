@@ -47,6 +47,10 @@ use nft_mint_and_verify::instruction as nft_instructions;
 use nft_mint_and_verify::accounts as nft_accounts;
 
 
+use escrow_marketplace::instruction as market_instructions;
+use escrow_marketplace::accounts as market_accounts;
+
+
 #[derive(Parser, Debug)]
 pub struct Opts {
     #[clap(long)]
@@ -58,9 +62,10 @@ pub struct Opts {
 }
 
 const SPL_PROGRAM_ID: &'static str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
-
-//const BRIDGE_CONTRACT: &'static str = "F1eqWRT9CUruLk9n4mX4fCYKDqSde9yLtveRaywx6vwn";
-//const TOKEN_ADDRESS: &'static str = "7YYNXbfwd5i5scpez18fTkEh2MRHJXoMHPffnWNcpFYf";
+//市场托管合约
+const ESCROW_MARKETPLACE: &'static str = "Hv49DNdC6CUSwK3MWH5gj5BfLUU64r2ANXwdhaaRceGD";
+//一键生成NFT的合约
+const NFT_MINT_CONTRACT: &'static str = "9HiRJw3dYo2MV9B1WrqFfoNjWRPS19mjVDCPqAxuMPfb";
 const SENDER: &'static str = "9hUYW9s2c98GfjZb6JvW62BYEt3ryxGmeMBkhgSqmZtW";
 const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: &'static str = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
 const SYSTEM_PROGRAM_ID: &'static str = "11111111111111111111111111111111";
@@ -92,6 +97,42 @@ pub fn get_acc(address: Pubkey) -> solana_sdk::account::Account{
 }
 
 
+fn get_token_account_by_wallet(wallet_pubkey: Pubkey,mint_pubkey: Pubkey) -> Option<Pubkey>{
+    let rpc_url = String::from("https://api.devnet.solana.com");
+    let connection = RpcClient::new_with_commitment(rpc_url, CommitmentConfig::confirmed());
+
+    let filters = Some(vec![
+        RpcFilterType::Memcmp(Memcmp {
+            offset: 32,
+            bytes: MemcmpEncodedBytes::Base58(wallet_pubkey.to_string()),
+            encoding: Some(MemcmpEncoding::Binary),
+        }),
+        RpcFilterType::DataSize(165),
+    ]);
+
+    let accounts = connection.get_program_accounts_with_config(
+        &Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+        RpcProgramAccountsConfig {
+            filters,
+            account_config: RpcAccountInfoConfig {
+                encoding: Some(UiAccountEncoding::Base64),
+                commitment: Some(connection.commitment()),
+                ..RpcAccountInfoConfig::default()
+            },
+            ..RpcProgramAccountsConfig::default()
+        },
+    ).unwrap();
+
+    println!("Found {:?} token account(s) for wallet {}: ", accounts.len(),wallet_pubkey.to_string());
+    let token_account = accounts.iter().find(|&account| {
+        let mint_token_account = Account::unpack_from_slice(account.1.data.as_slice()).unwrap();
+        let mint_token_account = mint_token_account.mint.to_string();
+        mint_pubkey.to_string() == mint_token_account
+    });
+    //todo: 不仅检查是否在当前program找到，还要检查所有的
+    token_account.map(|token_account| token_account.0.to_owned())
+}
+
 // This example assumes a local validator is running with the programs
 // deployed at the addresses given by the CLI args.
 fn main() -> Result<()> {
@@ -108,7 +149,10 @@ fn main() -> Result<()> {
 
     // Client.
     let client = Client::new_with_options(url, Rc::new(payer), CommitmentConfig::processed());
-    mint_nft(&client, opts)?;
+    //let mint_key = mint_nft(&client, opts)?;
+    let mint_key= Pubkey::from_str("Hpp4QyZXHjm3S2GGCbWcjAfPMWuEYszwo53SKM5MCeLy").unwrap();
+    //sell(&client,mint_key);
+    //cancel(&client,mint_key);
     //todo
     /***
     sell
@@ -121,16 +165,124 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn mint_nft(client: &Client, params: Opts) -> Result<()> {
-    let program = client.program(params.bridge_contract_pid); //9HiRJw3dYo2MV9B1WrqFfoNjWRPS19mjVDCPqAxuMPfb
+fn cancel(client: &Client, nft_mint_key: Pubkey){
+    let program = client.program(Pubkey::from_str(ESCROW_MARKETPLACE).unwrap());
+    let authority = program.payer();
+    let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
+    //let escrow_account = Keypair::new();
+    let escrow_account_key = Pubkey::from_str("AsjuTpMbMhB3ZHN51tp3n8nHndZ6R6XMopAn1oJK2Tpg").unwrap();
+    /* //当前记忆碎皮的集合的meta_account
+     let nft_token_account = get_associated_token_address(&to_wallet,&nft_mint_key.pubkey());
+     let receiver_token_account = get_associated_token_address(&params.receiver_wallet, &nft_mint_key.pubkey());
+     let metadata_address = find_metadata_pda(&nft_mint_key.pubkey());
+     let edition_address = find_master_edition_pda(&nft_mint_key.pubkey());*/
+
+
+    let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
+        &[b"token-seed8"],
+        &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
+    );
+
+    let (vault_authority_pda, _escrow_account_bump) =   Pubkey::find_program_address(
+          &[b"escrow"],
+          &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
+      );
+
+    let seller_token_account = get_token_account_by_wallet(payer.pubkey(),nft_mint_key).unwrap();
+    println!("nft mint key {},vault_account_pda {}", nft_mint_key.to_string(),vault_account_pda);
+
+
+    let sell_res = program
+        .request()
+        .accounts(market_accounts::Cancel{
+            initializer: payer.pubkey(),
+            seller_token_account: seller_token_account,
+            vault_account: vault_account_pda,
+            vault_authority: vault_authority_pda,
+            escrow_account: escrow_account_key,
+            token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+        })
+        .args(market_instructions::Cancel)
+        .signer(&payer)
+        .send().unwrap();
+    println!("sell_res {}",sell_res.to_string());
+    println!("nft mint key {},vault_account_pda {}", nft_mint_key.to_string(),vault_account_pda);
+
+}
+
+fn sell(client: &Client, nft_mint_key: Pubkey){
+    let program = client.program(Pubkey::from_str(ESCROW_MARKETPLACE).unwrap());
+    let authority = program.payer();
+    let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
+    let escrow_account = Keypair::new();
+
+    /* //当前记忆碎皮的集合的meta_account
+     let nft_token_account = get_associated_token_address(&to_wallet,&nft_mint_key.pubkey());
+     let receiver_token_account = get_associated_token_address(&params.receiver_wallet, &nft_mint_key.pubkey());
+     let metadata_address = find_metadata_pda(&nft_mint_key.pubkey());
+     let edition_address = find_master_edition_pda(&nft_mint_key.pubkey());*/
+
+
+    let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
+        &[b"token-seed8"],
+        &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
+    );
+
+  /*  let (escrow_account, _escrow_account_bump) =   Pubkey::find_program_address(
+        &[b"escrow"],
+        &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
+    );*/
+
+    let seller_token_account = get_token_account_by_wallet(payer.pubkey(),nft_mint_key).unwrap();
+    println!("escrow_account key {},seller_token_account {}", escrow_account.pubkey().to_string(),seller_token_account.to_string());
+    println!("nft mint key {},vault_account_pda {}", nft_mint_key.to_string(),vault_account_pda);
+
+
+    let sell_res = program
+        .request()
+        .instruction(
+            system_instruction::create_account(
+                &payer.pubkey(),
+                &escrow_account.pubkey(),
+                1447680,
+                80u64,
+                &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap(),
+            )
+        )
+        .accounts(market_accounts::Initialize{
+            initializer: payer.pubkey(),
+            nft_mint: nft_mint_key,
+
+            vault_account: vault_account_pda,
+            seller_token_account: seller_token_account,
+            escrow_account: escrow_account.pubkey(),
+
+            system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
+            rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
+            token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+        })
+        .args(market_instructions::Initialize{_vault_account_bump:1,price:1000})
+        .signer(&payer)
+        .signer(&escrow_account)
+        .send().unwrap();
+    println!("sell_res {}",sell_res.to_string());
+    println!("nft mint key {},vault_account_pda {}", nft_mint_key.to_string(),vault_account_pda);
+
+}
+
+fn mint_nft(client: &Client, params: Opts) -> Result<Pubkey> {
+    let program = client.program(Pubkey::from_str(NFT_MINT_CONTRACT).unwrap()); //9HiRJw3dYo2MV9B1WrqFfoNjWRPS19mjVDCPqAxuMPfb
     let authority = program.payer();
     let to_wallet = program.payer();
     let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
     let nft_mint_key = Keypair::new();
     println!("nft mint key {}", nft_mint_key.pubkey().to_string());
 
-    //当前记忆碎皮的集合的meta_account
-    let memorise_mint_account = "6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph";
+    //当前记忆碎皮的集合的meta_account,权限已经给了付鸿
+    //let memorise_mint_account = "6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph";
+    //当前礼物的集合 8zKSXBACKpaKvgDCYdDwpJGTVDSBCtAgucJpmR7gAyx5
+    let memorise_mint_account = "8zKSXBACKpaKvgDCYdDwpJGTVDSBCtAgucJpmR7gAyx5";
+
     let nft_token_account = get_associated_token_address(&to_wallet,&nft_mint_key.pubkey());
     let receiver_token_account = get_associated_token_address(&params.receiver_wallet, &nft_mint_key.pubkey());
     let metadata_address = find_metadata_pda(&nft_mint_key.pubkey());
@@ -212,6 +364,7 @@ fn mint_nft(client: &Client, params: Opts) -> Result<()> {
         .signer(&payer)
         .send()?;
     println!("call res {}", call_res);
+    println!("nft mint key {}", nft_mint_key.pubkey().to_string());
 
-    Ok(())
+    Ok(nft_mint_key.pubkey())
 }
