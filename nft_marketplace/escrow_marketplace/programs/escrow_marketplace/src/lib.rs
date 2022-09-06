@@ -1,11 +1,27 @@
 use anchor_lang::prelude::*;
+use anchor_spl::associated_token;
 use anchor_spl::token::{self, CloseAccount, Mint, SetAuthority, TokenAccount, Transfer};
 use spl_token::instruction::AuthorityType;
+use std::str::FromStr;
 
 declare_id!("Hv49DNdC6CUSwK3MWH5gj5BfLUU64r2ANXwdhaaRceGD");
+const K_COIN:  &'static str = "5d1i4wKHhGXXkdZB22iKD1SqU6pkBeTCwFEMqo7xy39h";
+
+#[error_code]
+pub enum MarketError {
+    #[msg("InSufficientFunds")]
+    InSufficientFunds,
+    #[msg("NotSupportCoin")]
+    NotSupportCoin,
+    #[msg("NftNotMatched")]
+    NftNotMatched,
+    #[msg("SellerNotMatched")]
+    SellerNotMatched
+}
 
 #[program]
 pub mod escrow_marketplace {
+    use std::str::FromStr;
     use super::*;
 
     const ESCROW_PDA_SEED: &[u8] = b"escrow";
@@ -21,6 +37,14 @@ pub mod escrow_marketplace {
             .seller_token_account = *ctx
             .accounts
             .seller_token_account
+            .to_account_info()
+            .key;
+
+        ctx.accounts
+            .escrow_account
+            .seller_mint_token_account = *ctx
+            .accounts
+            .nft_mint
             .to_account_info()
             .key;
 
@@ -101,7 +125,7 @@ pub struct Initialize<'info> {
     pub nft_mint: Account<'info, Mint>,
     #[account(
         init,
-        seeds = [b"token-seed9".as_ref()],
+        seeds = [b"token-seed10".as_ref()],
         bump,
         payer = initializer,
         token::mint = nft_mint,
@@ -155,16 +179,29 @@ pub struct Cancel<'info> {
 */
 #[derive(Accounts)]
 pub struct Exchange<'info> {
-    #[account(signer)]
+    #[account(signer,mut)]
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub buyer: AccountInfo<'info>,
     #[account(mut)]
     pub buyer_coin_account: Box<Account<'info, TokenAccount>>,  // K coin
     #[account(
-        mut
+        constraint = *k_coin_mint_account.to_account_info().key == Pubkey::from_str(K_COIN).unwrap() @ MarketError::NotSupportCoin,
     )]
-    pub buyer_token_account: Box<Account<'info, TokenAccount>>, //nft token
-    #[account(mut)]
+    pub k_coin_mint_account: Box<Account<'info, Mint>>,  // K coin
+    pub nft_token_mint_account: Box<Account<'info, Mint>>,  // nft mint account
+    #[account(
+        init_if_needed,
+        payer = buyer,
+        associated_token::mint = nft_token_mint_account,
+        associated_token::authority = buyer,
+    )]
+    pub buyer_token_account: Account<'info, TokenAccount>, //nft token
+    #[account(
+        init_if_needed,
+        payer = buyer,
+        associated_token::mint = k_coin_mint_account,
+        associated_token::authority = seller,
+    )]
     pub seller_coin_account: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
     pub seller_token_account: Box<Account<'info, TokenAccount>>,
@@ -173,9 +210,10 @@ pub struct Exchange<'info> {
     pub seller: AccountInfo<'info>,
     #[account(
         mut,
-        constraint = escrow_account.price <= buyer_coin_account.amount,
-        constraint = escrow_account.seller_token_account == *seller_token_account.to_account_info().key,
-        constraint = escrow_account.initializer_key == *seller.key,
+        constraint = escrow_account.price <= buyer_coin_account.amount                                           @ MarketError::InSufficientFunds,
+        constraint = escrow_account.seller_token_account == *seller_token_account.to_account_info().key     ,
+        constraint = escrow_account.seller_mint_token_account == *nft_token_mint_account.to_account_info().key   @ MarketError::NftNotMatched,
+        constraint = escrow_account.initializer_key == *seller.key                                               @ MarketError::SellerNotMatched,
         close = seller
     )]
     pub escrow_account: Box<Account<'info, EscrowAccount>>,
@@ -185,13 +223,19 @@ pub struct Exchange<'info> {
     pub vault_authority: AccountInfo<'info>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub token_program: AccountInfo<'info>,
+    //sys account
+    pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>,
+
 }
 
 #[account]
 pub struct EscrowAccount {
     pub initializer_key: Pubkey,
+    pub seller_mint_token_account: Pubkey,
     pub seller_token_account: Pubkey,
-    pub price: u64, //todo：兼容多币种,可以增加一个token_account 作为接受地址同时约束了币种
+    pub price: u64,
 }
 
 impl<'info> Initialize<'info> {

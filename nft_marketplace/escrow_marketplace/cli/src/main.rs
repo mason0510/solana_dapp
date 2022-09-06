@@ -155,7 +155,7 @@ fn main() -> Result<()> {
     let mint_key= Pubkey::from_str("Hpp4QyZXHjm3S2GGCbWcjAfPMWuEYszwo53SKM5MCeLy").unwrap();
     //sell(&client,mint_key);
     //cancel(&client,mint_key);
-    //buy(&client,mint_key);
+    buy(&client,mint_key);
 
     //todo
     /***
@@ -178,10 +178,10 @@ fn buy(client: &Client, nft_mint_key: Pubkey){
 
 
     //let escrow_account = Keypair::new();
-    let escrow_account_key = Pubkey::from_str("AsjuTpMbMhB3ZHN51tp3n8nHndZ6R6XMopAn1oJK2Tpg").unwrap();
+    let escrow_account_key = Pubkey::from_str("GgDrmmH6sroDTxPeHFWG2za3DhGykEVUzcHXtYcwvA6g").unwrap();
 
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
-        &[b"token-seed8"],
+        &[b"token-seed10"],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
     );
 
@@ -201,6 +201,9 @@ fn buy(client: &Client, nft_mint_key: Pubkey){
     let buyer_res = program
         .request()
         .accounts(market_accounts::Exchange{
+            k_coin_mint_account: Pubkey::from_str(K_COIN).unwrap(),
+            nft_token_mint_account: nft_mint_key,
+
             buyer: buyer.pubkey(),
             buyer_coin_account,
             buyer_token_account,
@@ -212,6 +215,11 @@ fn buy(client: &Client, nft_mint_key: Pubkey){
             vault_authority: vault_authority_pda,
             escrow_account: escrow_account_key,
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+
+            // sys account
+            associated_token_program: Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap(),
+            system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
+            rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
         })
         .args(market_instructions::Exchange)
         .signer(&buyer)
@@ -230,7 +238,7 @@ fn cancel(client: &Client, nft_mint_key: Pubkey){
     let escrow_account_key = Pubkey::from_str("FJ9PetXXRRibBCM36RtXzCpB39UVSVEjAZFXArD2FbjU").unwrap();
 
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
-        &[b"token-seed8"],
+        &[b"token-seed10"],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
     );
 
@@ -268,7 +276,7 @@ fn sell(client: &Client, nft_mint_key: Pubkey){
     let escrow_account = Keypair::new();
 
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
-        &[b"token-seed9"],
+        &[b"token-seed10"],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
     );
 
@@ -288,8 +296,8 @@ fn sell(client: &Client, nft_mint_key: Pubkey){
             system_instruction::create_account(
                 &payer.pubkey(),
                 &escrow_account.pubkey(),
-                1447680,
-                80u64,
+                14476800,    //todo: 精确计算资源
+                800u64,
                 &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap(),
             )
         )
