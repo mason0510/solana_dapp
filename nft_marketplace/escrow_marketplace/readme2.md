@@ -8,3 +8,5 @@
 1、怎么查询遍历所有的挂单，find program ？
 2、兼容多币种
 3、还要判断token_account是否可用，没创建的话在合约里面创建，或者用anchor的init_if_need
+4、约束必须是K币
+5、其他安全隐患

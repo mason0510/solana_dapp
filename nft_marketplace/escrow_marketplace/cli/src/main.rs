@@ -60,6 +60,8 @@ pub struct Opts {
     #[clap(long)]
     pub receiver_wallet: Pubkey,
 }
+//K coin
+const K_COIN: &'static str = "5d1i4wKHhGXXkdZB22iKD1SqU6pkBeTCwFEMqo7xy39h";
 
 const SPL_PROGRAM_ID: &'static str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 //市场托管合约
@@ -153,6 +155,8 @@ fn main() -> Result<()> {
     let mint_key= Pubkey::from_str("Hpp4QyZXHjm3S2GGCbWcjAfPMWuEYszwo53SKM5MCeLy").unwrap();
     //sell(&client,mint_key);
     //cancel(&client,mint_key);
+    //buy(&client,mint_key);
+
     //todo
     /***
     sell
@@ -165,18 +169,65 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn buy(client: &Client, nft_mint_key: Pubkey){
+    let program = client.program(Pubkey::from_str(ESCROW_MARKETPLACE).unwrap());
+    let authority = program.payer();
+    //5wEmePkkXAWYYvvWQDv4Mbenma1jWvzCbt3rK9ihmrqH
+    let buyer = read_keypair_file(&*shellexpand::tilde("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/2.json")).expect("Example requires a keypair file");
+    let seller = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
+
+
+    //let escrow_account = Keypair::new();
+    let escrow_account_key = Pubkey::from_str("AsjuTpMbMhB3ZHN51tp3n8nHndZ6R6XMopAn1oJK2Tpg").unwrap();
+
+    let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
+        &[b"token-seed8"],
+        &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
+    );
+
+    let (vault_authority_pda, _escrow_account_bump) =   Pubkey::find_program_address(
+        &[b"escrow"],
+        &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
+    );
+
+    let seller_coin_account = get_associated_token_address(&seller.pubkey(), &Pubkey::from_str(K_COIN).unwrap());
+    let seller_token_account = get_associated_token_address(&seller.pubkey(), &nft_mint_key);
+
+    let buyer_coin_account = get_associated_token_address(&buyer.pubkey(), &Pubkey::from_str(K_COIN).unwrap());
+    let buyer_token_account = get_associated_token_address(&buyer.pubkey(), &nft_mint_key);
+
+    println!("nft mint key {},vault_account_pda {},vault_authority_pda {}", nft_mint_key.to_string(),vault_account_pda,vault_authority_pda);
+
+    let buyer_res = program
+        .request()
+        .accounts(market_accounts::Exchange{
+            buyer: buyer.pubkey(),
+            buyer_coin_account,
+            buyer_token_account,
+            seller_coin_account,
+            seller_token_account,
+            seller: seller.pubkey(),
+
+            vault_account: vault_account_pda,
+            vault_authority: vault_authority_pda,
+            escrow_account: escrow_account_key,
+            token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+        })
+        .args(market_instructions::Exchange)
+        .signer(&buyer)
+        .send().unwrap();
+    println!("sell_res {}",buyer_res.to_string());
+    println!("nft mint key {},vault_account_pda {}", nft_mint_key.to_string(),vault_account_pda);
+
+}
+
+
 fn cancel(client: &Client, nft_mint_key: Pubkey){
     let program = client.program(Pubkey::from_str(ESCROW_MARKETPLACE).unwrap());
     let authority = program.payer();
     let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
     //let escrow_account = Keypair::new();
-    let escrow_account_key = Pubkey::from_str("AsjuTpMbMhB3ZHN51tp3n8nHndZ6R6XMopAn1oJK2Tpg").unwrap();
-    /* //当前记忆碎皮的集合的meta_account
-     let nft_token_account = get_associated_token_address(&to_wallet,&nft_mint_key.pubkey());
-     let receiver_token_account = get_associated_token_address(&params.receiver_wallet, &nft_mint_key.pubkey());
-     let metadata_address = find_metadata_pda(&nft_mint_key.pubkey());
-     let edition_address = find_master_edition_pda(&nft_mint_key.pubkey());*/
-
+    let escrow_account_key = Pubkey::from_str("FJ9PetXXRRibBCM36RtXzCpB39UVSVEjAZFXArD2FbjU").unwrap();
 
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
         &[b"token-seed8"],
@@ -216,25 +267,18 @@ fn sell(client: &Client, nft_mint_key: Pubkey){
     let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
     let escrow_account = Keypair::new();
 
-    /* //当前记忆碎皮的集合的meta_account
-     let nft_token_account = get_associated_token_address(&to_wallet,&nft_mint_key.pubkey());
-     let receiver_token_account = get_associated_token_address(&params.receiver_wallet, &nft_mint_key.pubkey());
-     let metadata_address = find_metadata_pda(&nft_mint_key.pubkey());
-     let edition_address = find_master_edition_pda(&nft_mint_key.pubkey());*/
-
-
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
-        &[b"token-seed8"],
+        &[b"token-seed9"],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
     );
 
-  /*  let (escrow_account, _escrow_account_bump) =   Pubkey::find_program_address(
+  let (vault_authority_pda, _escrow_account_bump) =   Pubkey::find_program_address(
         &[b"escrow"],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
-    );*/
+    );
 
     let seller_token_account = get_token_account_by_wallet(payer.pubkey(),nft_mint_key).unwrap();
-    println!("escrow_account key {},seller_token_account {}", escrow_account.pubkey().to_string(),seller_token_account.to_string());
+    println!("escrow_account key {},seller_token_account {},vault_authority_pda {}", escrow_account.pubkey().to_string(),seller_token_account.to_string(),vault_authority_pda.to_string());
     println!("nft mint key {},vault_account_pda {}", nft_mint_key.to_string(),vault_account_pda);
 
 
@@ -261,7 +305,7 @@ fn sell(client: &Client, nft_mint_key: Pubkey){
             rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
         })
-        .args(market_instructions::Initialize{_vault_account_bump:1,price:1000})
+        .args(market_instructions::Initialize{_vault_account_bump:1,price:1_000_000_000}) //todo: delete _vault_account_bump
         .signer(&payer)
         .signer(&escrow_account)
         .send().unwrap();

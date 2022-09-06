@@ -101,7 +101,7 @@ pub struct Initialize<'info> {
     pub nft_mint: Account<'info, Mint>,
     #[account(
         init,
-        seeds = [b"token-seed8".as_ref()],
+        seeds = [b"token-seed9".as_ref()],
         bump,
         payer = initializer,
         token::mint = nft_mint,
@@ -144,6 +144,15 @@ pub struct Cancel<'info> {
     pub token_program: AccountInfo<'info>,
 }
 
+
+/***
+ #[account(
+        init_if_needed,
+        payer = user_receiving,
+        associated_token::mint = mint_of_token_being_sent,
+        associated_token::authority = user_receiving,
+    )]
+*/
 #[derive(Accounts)]
 pub struct Exchange<'info> {
     #[account(signer)]
@@ -151,7 +160,9 @@ pub struct Exchange<'info> {
     pub buyer: AccountInfo<'info>,
     #[account(mut)]
     pub buyer_coin_account: Box<Account<'info, TokenAccount>>,  // K coin
-    #[account(mut)]
+    #[account(
+        mut
+    )]
     pub buyer_token_account: Box<Account<'info, TokenAccount>>, //nft token
     #[account(mut)]
     pub seller_coin_account: Box<Account<'info, TokenAccount>>,
