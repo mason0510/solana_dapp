@@ -178,7 +178,7 @@ fn buy(client: &Client, nft_mint_key: Pubkey){
 
 
     //let escrow_account = Keypair::new();
-    let escrow_account_key = Pubkey::from_str("GgDrmmH6sroDTxPeHFWG2za3DhGykEVUzcHXtYcwvA6g").unwrap();
+    let escrow_account_key = Pubkey::from_str("GBanDj1S2fZFMDRTkvqAQdXNEJH4jAAa6Jxsgf8Y1c8H").unwrap();
 
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
         &[b"token-seed10"],
@@ -200,7 +200,7 @@ fn buy(client: &Client, nft_mint_key: Pubkey){
 
     let buyer_res = program
         .request()
-        .accounts(market_accounts::Exchange{
+        .accounts(market_accounts::Buy{
             k_coin_mint_account: Pubkey::from_str(K_COIN).unwrap(),
             nft_token_mint_account: nft_mint_key,
 
@@ -221,7 +221,7 @@ fn buy(client: &Client, nft_mint_key: Pubkey){
             system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
             rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
         })
-        .args(market_instructions::Exchange)
+        .args(market_instructions::Buy)
         .signer(&buyer)
         .send().unwrap();
     println!("sell_res {}",buyer_res.to_string());
@@ -235,7 +235,7 @@ fn cancel(client: &Client, nft_mint_key: Pubkey){
     let authority = program.payer();
     let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
     //let escrow_account = Keypair::new();
-    let escrow_account_key = Pubkey::from_str("FJ9PetXXRRibBCM36RtXzCpB39UVSVEjAZFXArD2FbjU").unwrap();
+    let escrow_account_key = Pubkey::from_str("44qWFYB6Q8q8n5XkWydRhCjTBbdKGKhRRHTrLHjAvUMk").unwrap();
 
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
         &[b"token-seed10"],
@@ -254,7 +254,7 @@ fn cancel(client: &Client, nft_mint_key: Pubkey){
     let sell_res = program
         .request()
         .accounts(market_accounts::Cancel{
-            initializer: payer.pubkey(),
+            seller: payer.pubkey(),
             seller_token_account: seller_token_account,
             vault_account: vault_account_pda,
             vault_authority: vault_authority_pda,
@@ -292,28 +292,17 @@ fn sell(client: &Client, nft_mint_key: Pubkey){
 
     let sell_res = program
         .request()
-        .instruction(
-            system_instruction::create_account(
-                &payer.pubkey(),
-                &escrow_account.pubkey(),
-                14476800,    //todo: 精确计算资源
-                800u64,
-                &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap(),
-            )
-        )
-        .accounts(market_accounts::Initialize{
-            initializer: payer.pubkey(),
+        .accounts(market_accounts::Sell{
+            seller: payer.pubkey(),
             nft_mint: nft_mint_key,
-
             vault_account: vault_account_pda,
             seller_token_account: seller_token_account,
             escrow_account: escrow_account.pubkey(),
-
             system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
             rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
         })
-        .args(market_instructions::Initialize{_vault_account_bump:1,price:1_000_000_000}) //todo: delete _vault_account_bump
+        .args(market_instructions::Sell{_vault_authority_key:vault_authority_pda,price:1_000_000_000}) //todo: delete _vault_account_bump
         .signer(&payer)
         .signer(&escrow_account)
         .send().unwrap();

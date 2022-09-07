@@ -42,7 +42,7 @@ pub struct Buy<'info> {
     constraint = escrow_account.price <= buyer_coin_account.amount                                           @ MarketError::InSufficientFunds,
     constraint = escrow_account.seller_token_account == *seller_token_account.to_account_info().key     ,
     constraint = escrow_account.seller_mint_token_account == *nft_token_mint_account.to_account_info().key   @ MarketError::NftNotMatched,
-    constraint = escrow_account.initializer_key == *seller.key                                               @ MarketError::SellerNotMatched,
+    constraint = escrow_account.seller == *seller.key                                               @ MarketError::SellerNotMatched,
     close = seller
     )]
     pub escrow_account: Box<Account<'info, OrderAccount>>,
@@ -92,7 +92,7 @@ impl<'info> Buy<'info> {
     }
 }
 
-pub fn buy(ctx: Context<Buy>) -> Result<()> {
+pub fn process_buy(ctx: Context<Buy>) -> Result<()> {
     let (_vault_authority, vault_authority_bump) =
         Pubkey::find_program_address(&[ESCROW_PDA_SEED], ctx.program_id);
     let authority_seeds = &[&ESCROW_PDA_SEED[..], &[vault_authority_bump]];
