@@ -1,3 +1,5 @@
+extern crate core;
+
 use std::cmp::min;
 use std::io::Error;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
@@ -59,8 +61,9 @@ use escrow_marketplace::instruction as market_instructions;
 use escrow_marketplace::accounts as market_accounts;
 use serde::{Deserialize,Serialize};
 use solana_sdk::account::ReadableAccount;
+use escrow_marketplace::constants::{VAULT_PREFIX, VAULT_SIGNER};
 
-use escrow_marketplace::state::order::OrderAccount;
+use escrow_marketplace::state::order::SellOrder;
 /*//#[derive(BorshSerialize, BorshDeserialize, Debug)]
 #[derive(AnchorSerialize, AnchorDeserialize, Debug,Serialize,Deserialize)]
 pub struct OrderAccount {
@@ -173,8 +176,9 @@ fn main() -> Result<()> {
     let mint_key = mint_nft(&client, opts)?;
     //let mint_key= Pubkey::from_str("Hpp4QyZXHjm3S2GGCbWcjAfPMWuEYszwo53SKM5MCeLy").unwrap();
     //cancel(&client,Pubkey::from_str("Hpp4QyZXHjm3S2GGCbWcjAfPMWuEYszwo53SKM5MCeLy").unwrap(),Pubkey::from_str("CfAHnQ13nQP5aXYzS3kKuaLr8XwLJftFLzhjcpu1Cenp").unwrap());
-    let escrow_account1 = sell(&client,mint_key.clone());
-    cancel(&client,mint_key.clone(),escrow_account1);
+  /*  let escrow_account1 = sell(&client,mint_key.clone());
+    list_orders();
+    cancel(&client,mint_key.clone(),escrow_account1);*/
     let escrow_account2 = sell(&client,mint_key.clone());
     list_orders();
     buy(&client,mint_key.clone(),escrow_account2);
@@ -188,9 +192,9 @@ fn list_orders(){
     let order_accounts = connection.get_program_accounts(&Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()).unwrap();
     let order_infos = order_accounts.iter().map(|(escrow_key,escrow_account)| {
         //println!("escrow_key  {:?}",escrow_key);
-        match OrderAccount::try_from_slice(&escrow_account.data.as_slice()[8..]) {
+        match solana_sdk::borsh::try_from_slice_unchecked::<SellOrder>(&escrow_account.data.as_slice()[8..]) {
             Ok(data) => {
-                let meta_data_account = find_metadata_pda(&data.seller_mint_token_account);
+                let meta_data_account = find_metadata_pda(&data.mint_account);
                 let test1 = connection.get_account(&meta_data_account).unwrap().data;
                 let meta_data = solana_sdk::borsh::try_from_slice_unchecked::<mpl_token_metadata::state::Metadata>(test1.as_slice()).unwrap();
                 Some(meta_data)
@@ -213,12 +217,12 @@ fn buy(client: &Client, nft_mint_key: Pubkey,escrow_account_key: Pubkey){
     let seller = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
 
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
-        &[b"token-seed10"],
+        &[VAULT_PREFIX,nft_mint_key.as_ref()],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
     );
 
     let (vault_authority_pda, _escrow_account_bump) =   Pubkey::find_program_address(
-        &[b"escrow"],
+        &[VAULT_SIGNER,nft_mint_key.as_ref()],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
     );
 
@@ -233,21 +237,18 @@ fn buy(client: &Client, nft_mint_key: Pubkey,escrow_account_key: Pubkey){
     let buyer_res = program
         .request()
         .accounts(market_accounts::Buy{
-            k_coin_mint_account: Pubkey::from_str(K_COIN).unwrap(),
-            nft_token_mint_account: nft_mint_key,
-
             buyer: buyer.pubkey(),
             buyer_coin_account,
+            k_coin_mint_account: Pubkey::from_str(K_COIN).unwrap(),
+            nft_token_mint_account: nft_mint_key,
             buyer_token_account,
             seller_coin_account,
             seller_token_account,
             seller: seller.pubkey(),
-
+            escrow_account: escrow_account_key,
             vault_account: vault_account_pda,
             vault_authority: vault_authority_pda,
-            escrow_account: escrow_account_key,
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
-
             // sys account
             associated_token_program: Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap(),
             system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
@@ -268,12 +269,12 @@ fn cancel(client: &Client, nft_mint_key: Pubkey,escrow_account_key: Pubkey){
     let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
 
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
-        &[b"token-seed10"],
+        &[VAULT_PREFIX,nft_mint_key.as_ref()],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
     );
 
     let (vault_authority_pda, _escrow_account_bump) =   Pubkey::find_program_address(
-          &[b"escrow"],
+          &[VAULT_SIGNER,nft_mint_key.as_ref()],
           &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
       );
 
@@ -304,14 +305,15 @@ fn sell(client: &Client, nft_mint_key: Pubkey) -> Pubkey{
     let authority = program.payer();
     let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
     let escrow_account = Keypair::new();
-
+    //     VAULT_PREFIX.as_ref(),
+    //         nft_mint.key().as_ref()
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
-        &[b"token-seed10"],
+        &[VAULT_PREFIX,nft_mint_key.as_ref()],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
     );
 
   let (vault_authority_pda, _escrow_account_bump) =   Pubkey::find_program_address(
-        &[b"escrow"],
+        &[VAULT_SIGNER],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
     );
 

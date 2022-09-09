@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token;
 use anchor_spl::token::{CloseAccount, TokenAccount, Transfer};
-use crate::constants::ESCROW_PDA_SEED;
-use crate::state::order::OrderAccount;
+use crate::constants::VAULT_SIGNER;
+use crate::state::order::SellOrder;
 
 #[derive(Accounts)]
 pub struct Cancel<'info> {
@@ -17,11 +17,11 @@ pub struct Cancel<'info> {
     pub seller_token_account: Account<'info, TokenAccount>,
     #[account(
     mut,
-    constraint = escrow_account.seller == *seller.key,
-    constraint = escrow_account.seller_token_account == *seller_token_account.to_account_info().key,
+    constraint = escrow_account.wallet == *seller.key,
+    constraint = escrow_account.nft_token_account == *seller_token_account.to_account_info().key,
     close = seller
     )]
-    pub escrow_account: Box<Account<'info, OrderAccount>>,
+    pub escrow_account: Box<Account<'info, SellOrder>>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub token_program: AccountInfo<'info>,
 }
@@ -52,9 +52,14 @@ impl<'info> Cancel<'info> {
 }
 
 pub fn process_cancel(ctx: Context<Cancel>) -> Result<()> {
+    let mint_account_seed = ctx.accounts.escrow_account.mint_account.key().as_ref().to_owned();
+
     let (_vault_authority, vault_authority_bump) =
-        Pubkey::find_program_address(&[ESCROW_PDA_SEED], ctx.program_id);
-    let authority_seeds = &[&ESCROW_PDA_SEED[..], &[vault_authority_bump]];
+        Pubkey::find_program_address(&[
+            VAULT_SIGNER,
+            mint_account_seed.as_slice()
+        ], ctx.program_id);
+    let authority_seeds = &[&VAULT_SIGNER[..],mint_account_seed.as_slice(),&[vault_authority_bump]];
 
     token::transfer(
         ctx.accounts

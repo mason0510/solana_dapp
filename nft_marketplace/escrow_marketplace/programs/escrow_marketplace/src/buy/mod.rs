@@ -4,19 +4,20 @@ use anchor_spl::token::{CloseAccount, Mint, TokenAccount, Transfer};
 use crate::constants::*;
 use crate::errors::MarketError;
 use std::str::FromStr;
-use crate::state::order::OrderAccount;
+use crate::state::order::SellOrder;
 
 #[derive(Accounts)]
 pub struct Buy<'info> {
     #[account(signer,mut)]
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub buyer: AccountInfo<'info>,
-    #[account(mut)]
-    pub buyer_coin_account: Box<Account<'info, TokenAccount>>,  // K coin
     #[account(
-    constraint = *k_coin_mint_account.to_account_info().key == Pubkey::from_str(K_COIN).unwrap() @ MarketError::NotSupportCoin,
+        mut,
+        constraint = buyer_coin_account.amount >= escrow_account.price         @ MarketError::InSufficientFunds,
+        constraint = buyer_coin_account.mint == Pubkey::from_str(K_COIN).unwrap() @ MarketError::NotSupportCoin,
     )]
-    pub k_coin_mint_account: Box<Account<'info, Mint>>,  // K coin
+    pub buyer_coin_account: Box<Account<'info, TokenAccount>>,  // K coin
+    pub k_coin_mint_account: Box<Account<'info, Mint>>,  // nft mint account
     pub nft_token_mint_account: Box<Account<'info, Mint>>,  // nft mint account
     #[account(
     init_if_needed,
@@ -40,12 +41,12 @@ pub struct Buy<'info> {
     #[account(
     mut,
     constraint = escrow_account.price <= buyer_coin_account.amount                                           @ MarketError::InSufficientFunds,
-    constraint = escrow_account.seller_token_account == *seller_token_account.to_account_info().key     ,
-    constraint = escrow_account.seller_mint_token_account == *nft_token_mint_account.to_account_info().key   @ MarketError::NftNotMatched,
-    constraint = escrow_account.seller == *seller.key                                               @ MarketError::SellerNotMatched,
+    constraint = escrow_account.nft_token_account == *seller_token_account.to_account_info().key,
+    constraint = escrow_account.mint_account == *nft_token_mint_account.to_account_info().key                @ MarketError::NftNotMatched,
+    constraint = escrow_account.wallet == *seller.key                                                        @ MarketError::SellerNotMatched,
     close = seller
     )]
-    pub escrow_account: Box<Account<'info, OrderAccount>>,
+    pub escrow_account: Box<Account<'info, SellOrder>>,
     #[account(mut)]
     pub vault_account: Box<Account<'info, TokenAccount>>,
     /// CHECK: This is not dangerous because we don't read or write from this account
@@ -93,9 +94,11 @@ impl<'info> Buy<'info> {
 }
 
 pub fn process_buy(ctx: Context<Buy>) -> Result<()> {
+    let mint_account_seed = ctx.accounts.escrow_account.mint_account.key().as_ref().to_owned();
+
     let (_vault_authority, vault_authority_bump) =
-        Pubkey::find_program_address(&[ESCROW_PDA_SEED], ctx.program_id);
-    let authority_seeds = &[&ESCROW_PDA_SEED[..], &[vault_authority_bump]];
+        Pubkey::find_program_address(&[VAULT_SIGNER,mint_account_seed.as_slice()], ctx.program_id);
+    let authority_seeds = &[&VAULT_SIGNER[..], mint_account_seed.as_slice(),&[vault_authority_bump]];
     //send K coin to seller from buyer
     token::transfer(
         ctx.accounts.into_transfer_to_initializer_context(),

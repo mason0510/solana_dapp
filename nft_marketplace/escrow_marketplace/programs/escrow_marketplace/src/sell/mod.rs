@@ -2,8 +2,8 @@ use anchor_lang::prelude::*;
 use anchor_spl::token;
 use anchor_spl::token::{Mint, SetAuthority, TokenAccount, Transfer};
 use anchor_spl::token::spl_token::instruction::AuthorityType;
-use crate::constants::{ESCROW_PDA_SEED,ORDER_SPACE};
-use crate::state::order::OrderAccount;
+use crate::constants::{VAULT_SIGNER, ORDER_SPACE,VAULT_PREFIX};
+use crate::state::order::{SellOrder};
 
 #[derive(Accounts)]
 #[instruction(vault_authority_key: Pubkey, price: u64)]
@@ -12,9 +12,13 @@ pub struct Sell<'info> {
     #[account(mut, signer)]
     pub seller: AccountInfo<'info>,
     pub nft_mint: Account<'info, Mint>,
+    //fixme: add other params as seed?
     #[account(
     init,
-    seeds = [b"token-seed10".as_ref()],
+    seeds = [
+        VAULT_PREFIX.as_ref(),
+        nft_mint.key().as_ref()
+    ],
     bump,
     payer = seller,
     token::mint = nft_mint,
@@ -26,12 +30,13 @@ pub struct Sell<'info> {
     constraint = seller_token_account.amount == 1
     )]
     pub seller_token_account: Account<'info, TokenAccount>,
+    //fixme: replace with pda?
     #[account(
         init,
         payer = seller,
         space = ORDER_SPACE,
     )]
-    pub escrow_account: Account<'info, OrderAccount>,
+    pub escrow_account: Account<'info, SellOrder>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub system_program: AccountInfo<'info>,
     pub rent: Sysvar<'info, Rent>,
@@ -65,10 +70,10 @@ pub fn process_sell(
     ctx: Context<Sell>,
     price: u64,
 ) -> Result<()> {
-    ctx.accounts.escrow_account.seller = *ctx.accounts.seller.key;
+    ctx.accounts.escrow_account.wallet = *ctx.accounts.seller.key;
     ctx.accounts
         .escrow_account
-        .seller_token_account = *ctx
+        .nft_token_account = *ctx
         .accounts
         .seller_token_account
         .to_account_info()
@@ -76,7 +81,7 @@ pub fn process_sell(
 
     ctx.accounts
         .escrow_account
-        .seller_mint_token_account = *ctx
+        .mint_account = *ctx
         .accounts
         .nft_mint
         .to_account_info()
@@ -86,7 +91,10 @@ pub fn process_sell(
 
     //在owner里面直接指定了
     let (vault_authority, _vault_authority_bump) =
-        Pubkey::find_program_address(&[ESCROW_PDA_SEED], ctx.program_id);
+        Pubkey::find_program_address(&[
+            VAULT_SIGNER,
+            ctx.accounts.nft_mint.to_account_info().key.as_ref()
+        ], ctx.program_id);
     token::set_authority(
         ctx.accounts.into_set_authority_context(),
         AuthorityType::AccountOwner,
