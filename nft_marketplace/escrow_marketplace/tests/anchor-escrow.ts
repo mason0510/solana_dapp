@@ -21,6 +21,8 @@ describe('escrow_marketplace', () => {
   //mint A为coin
   //mint B为nft
   let mint_coin = null as Token;
+
+
   let mint_token = null as Token;
   let seller_coin_account = null;
   let seller_token_account = null;
@@ -117,33 +119,39 @@ describe('escrow_marketplace', () => {
     assert.ok(_takerTokenAccountB.amount.toNumber() == buyer_coin_amount);
   });
 
-  it("Initialize escrow", async () => {
+  it("sell nft", async () => {
     const [_vault_account_pda, _vault_account_bump] = await PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode("token-seed8"))],
+      [Buffer.from(anchor.utils.bytes.utf8.encode("market_vault"))],
       program.programId
     );
     vault_account_pda = _vault_account_pda;
     vault_account_bump = _vault_account_bump;
 
     const [_vault_authority_pda, _vault_authority_bump] = await PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode("escrow"))],
+      [Buffer.from(anchor.utils.bytes.utf8.encode("escrow_owner"))],
       program.programId
     );
     vault_authority_pda = _vault_authority_pda;
-    console.log("initializerMainAccount_0001_",seller.publicKey.toBase58());
-    console.log("initializerMainAccount_0002_",
-        mint_coin.publicKey.toBase58(),
-        vault_account_pda.toBase58()
-    );
+
     console.log("0003__",escrowAccount.publicKey.toBase58());
 
-
-    await program.rpc.initialize(
-      vault_account_bump,
+    /***
+     *
+     *  seller: payer.pubkey(),
+     *             nft_mint: nft_mint_key,
+     *             vault_account: vault_account_pda,
+     *             seller_token_account: seller_token_account,
+     *             escrow_account: escrow_account.pubkey(),
+     *             system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
+     *             rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
+     *             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+     * */
+    await program.rpc.sell(
+        vault_authority_pda.publicKey,
       new anchor.BN(buyer_coin_amount),
       {
         accounts: {
-          initializer: seller.publicKey,
+          seller: seller.publicKey,
           nftMint: mint_token.publicKey,
           vaultAccount: vault_account_pda,
           sellerTokenAccount: seller_token_account,
@@ -152,16 +160,13 @@ describe('escrow_marketplace', () => {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID,
         },
-        instructions: [
-          await program.account.escrowAccount.createInstruction(escrowAccount),
-        ],
         signers: [escrowAccount, seller],
       }
     );
 
     let _vault = await mint_token.getAccountInfo(vault_account_pda);
 
-    let _escrowAccount = await program.account.escrowAccount.fetch(
+    let _escrowAccount = await program.account.sellOrder.fetch(
       escrowAccount.publicKey
     );
 
@@ -170,16 +175,16 @@ describe('escrow_marketplace', () => {
 
     // Check that the values in the escrow account match what we expect.
     console.log("0001__",escrowAccount.publicKey);
-    assert.ok(_escrowAccount.initializerKey.equals(seller.publicKey));
+    assert.ok(_escrowAccount.wallet.equals(seller.publicKey));
     assert.ok(_escrowAccount.price.toNumber() == buyer_coin_amount);
     assert.ok(
-      _escrowAccount.sellerTokenAccount.equals(seller_token_account)
+      _escrowAccount.nftTokenAccount.equals(seller_token_account)
     );
 
   });
-
-  it("Exchange escrow state", async () => {
-    await program.rpc.exchange({
+/*
+  it("buy nft", async () => {
+    await program.rpc.buy({
       accounts: {
         buyer: buyer.publicKey,
         buyerCoinAccount: buyer_coin_account,
@@ -206,7 +211,7 @@ describe('escrow_marketplace', () => {
     assert.ok(_buyer_token_account.amount.toNumber() == nft_amount);
   });
 
-  it("Initialize escrow and cancel escrow", async () => {
+  it("sell nft and then cancel", async () => {
     // Put back tokens into initializer token A account.
     await mint_token.mintTo(
       seller_token_account,
@@ -236,16 +241,6 @@ describe('escrow_marketplace', () => {
       }
     );
 
-    // Cancel the escrow.
-    /***
-     *
-     *     pub initializer: AccountInfo<'info>,
-     *     pub vault_account: Account<'info, TokenAccount>,
-     *     pub vault_authority: AccountInfo<'info>,
-     *     pub seller_token_account: Account<'info, TokenAccount>,
-     *     pub escrow_account: Box<Account<'info, EscrowAccount>>,
-     *     pub token_program: AccountInfo<'info>,
-     * */
     await program.rpc.cancel({
       accounts: {
         initializer: seller.publicKey,
@@ -264,5 +259,5 @@ describe('escrow_marketplace', () => {
 
     // Check all the funds are still there.
     assert.ok(_initializerTokenAccountA.amount.toNumber() == nft_amount);
-  });
+  });*/
 });

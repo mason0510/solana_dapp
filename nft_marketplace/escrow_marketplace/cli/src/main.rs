@@ -312,6 +312,7 @@ fn sell(client: &Client, nft_mint_key: Pubkey) -> Pubkey{
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
     );
 
+    //todo:这里的vault_authority_pda没有用
   let (vault_authority_pda, _escrow_account_bump) =   Pubkey::find_program_address(
         &[VAULT_SIGNER],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
