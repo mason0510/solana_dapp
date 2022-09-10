@@ -121,14 +121,14 @@ describe('escrow_marketplace', () => {
 
   it("sell nft", async () => {
     const [_vault_account_pda, _vault_account_bump] = await PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode("market_vault"))],
+      [Buffer.from(anchor.utils.bytes.utf8.encode("market_vault")),mint_token.publicKey.toBuffer()],
       program.programId
     );
     vault_account_pda = _vault_account_pda;
     vault_account_bump = _vault_account_bump;
 
     const [_vault_authority_pda, _vault_authority_bump] = await PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode("escrow_owner"))],
+      [Buffer.from(anchor.utils.bytes.utf8.encode("escrow_owner")),mint_token.publicKey.toBuffer()],
       program.programId
     );
     vault_authority_pda = _vault_authority_pda;
