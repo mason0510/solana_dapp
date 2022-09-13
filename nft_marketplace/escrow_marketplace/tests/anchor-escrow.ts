@@ -4,7 +4,7 @@ import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import { EscrowMarketplace } from '../idl/escrow_marketplace';
 //import { AnchorEscrow } from '../target/types/anchor_escrow';
 import { PublicKey, SystemProgram, Transaction, Connection, Commitment } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
+import {TOKEN_PROGRAM_ID, createMint, createAccount, getAccount, mintTo} from "@solana/spl-token";
 import { assert } from "chai";
 
 describe('escrow_marketplace', () => {
@@ -20,10 +20,8 @@ describe('escrow_marketplace', () => {
 
   //mint A为coin
   //mint B为nft
-  let mint_coin = null as Token;
-
-
-  let mint_token = null as Token;
+  let mint_coin = null;
+  let mint_token = null;
   let seller_coin_account = null;
   let seller_token_account = null;
   let buyer_coin_account = null;
@@ -68,91 +66,76 @@ describe('escrow_marketplace', () => {
       })(),
       [payer]
     );
+    //创建nft
+    mint_coin = await createMint(provider.connection,
+        payer,
+        payer.publicKey,
+        mintAuthority.publicKey,
+        0)
+    //创建代币（k币）
+    mint_token = await createMint(provider.connection,
+        payer,
+        payer.publicKey,
+        mintAuthority.publicKey,
+        0)
 
-    mint_coin = await Token.createMint(
-      provider.connection,
-      payer,
-      mintAuthority.publicKey,
-      null,
-      0,
-      TOKEN_PROGRAM_ID
-    );
+    //创建卖家在k币上的ata账户
+    seller_coin_account = await createAccount(provider.connection,payer,mint_coin,seller.publicKey);//await mint_coin.createAccount(seller.publicKey);
+    //创建买家在k币上的ata账户
+    buyer_coin_account = await createAccount(provider.connection,payer,mint_coin,buyer.publicKey) //await mint_coin.createAccount(buyer.publicKey);
+    //创建卖家在该NFT上的ata账户
+    seller_token_account = await createAccount(provider.connection,payer,mint_token,seller.publicKey) //await mint_token.createAccount(seller.publicKey)
+    //创建买家在该NFT上的ata账户
+    buyer_token_account = await createAccount(provider.connection,payer,mint_token,buyer.publicKey) //await mint_token.createAccount(buyer.publicKey);
 
-    mint_token = await Token.createMint(
-      provider.connection,
-      payer,
-      mintAuthority.publicKey,
-      null,
-      0,
-      TOKEN_PROGRAM_ID
-    );
-    console.log("000A");
-    seller_coin_account = await mint_coin.createAccount(seller.publicKey);
-    buyer_coin_account = await mint_coin.createAccount(buyer.publicKey);
-
-    seller_token_account = await mint_token.createAccount(seller.publicKey);
-    buyer_token_account = await mint_token.createAccount(buyer.publicKey);
-  console.log("0000");
-    await mint_token.mintTo(
+    //初始化创建NFT并给到卖家的nft的ata账户
+    await mintTo(
+        provider.connection,
+        payer,
+        mint_token,
         seller_token_account,
-      mintAuthority.publicKey,
-      [mintAuthority],
-      nft_amount
+        payer.publicKey,
+        nft_amount
     );
-
-    await mint_coin.mintTo(
+    //初始化铸币1000个给买家的k币的ata账户
+    await mintTo(
+        provider.connection,
+        payer,
+        mint_coin,
         buyer_coin_account,
-      mintAuthority.publicKey,
-      [mintAuthority],
-      buyer_coin_amount
+        payer.publicKey,
+        buyer_coin_amount
     );
-    console.log("0001");
-    let _initializerTokenAccountA = await mint_token.getAccountInfo(seller_token_account);
-    let _takerTokenAccountB = await mint_coin.getAccountInfo(buyer_coin_account);
 
-    console.log("init_state_0002_",JSON.stringify(_initializerTokenAccountA));
-    console.log("init_state_0003_",JSON.stringify(_takerTokenAccountB));
+    let _initializerTokenAccountA = await getAccount(provider.connection,seller_token_account);
+    let _takerTokenAccountB = await getAccount(provider.connection,buyer_coin_account);
 
-
-
-    assert.ok(_initializerTokenAccountA.amount.toNumber() == nft_amount);
-    assert.ok(_takerTokenAccountB.amount.toNumber() == buyer_coin_amount);
+    assert.ok(Number(_initializerTokenAccountA.amount) as number ==   nft_amount);
+    assert.ok(Number(_takerTokenAccountB.amount) == buyer_coin_amount);
   });
 
+  //测试挂单接口
   it("sell nft", async () => {
     const [_vault_account_pda, _vault_account_bump] = await PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode("market_vault")),mint_token.publicKey.toBuffer()],
+      [Buffer.from(anchor.utils.bytes.utf8.encode("market_vault")),mint_token.toBuffer()],
       program.programId
     );
     vault_account_pda = _vault_account_pda;
     vault_account_bump = _vault_account_bump;
 
     const [_vault_authority_pda, _vault_authority_bump] = await PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode("escrow_owner")),mint_token.publicKey.toBuffer()],
+      [Buffer.from(anchor.utils.bytes.utf8.encode("escrow_owner")),mint_token.toBuffer()],
       program.programId
     );
     vault_authority_pda = _vault_authority_pda;
 
-    console.log("0003__",escrowAccount.publicKey.toBase58());
-
-    /***
-     *
-     *  seller: payer.pubkey(),
-     *             nft_mint: nft_mint_key,
-     *             vault_account: vault_account_pda,
-     *             seller_token_account: seller_token_account,
-     *             escrow_account: escrow_account.pubkey(),
-     *             system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
-     *             rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
-     *             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
-     * */
     await program.rpc.sell(
         vault_authority_pda.publicKey,
       new anchor.BN(buyer_coin_amount),
       {
         accounts: {
           seller: seller.publicKey,
-          nftMint: mint_token.publicKey,
+          nftMint: mint_token,
           vaultAccount: vault_account_pda,
           sellerTokenAccount: seller_token_account,
           escrowAccount: escrowAccount.publicKey,
@@ -164,7 +147,7 @@ describe('escrow_marketplace', () => {
       }
     );
 
-    let _vault = await mint_token.getAccountInfo(vault_account_pda);
+    let _vault = await getAccount(provider.connection,vault_account_pda);
 
     let _escrowAccount = await program.account.sellOrder.fetch(
       escrowAccount.publicKey
