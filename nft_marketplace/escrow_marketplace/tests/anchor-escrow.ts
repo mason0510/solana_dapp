@@ -1,13 +1,21 @@
 import * as anchor from '@project-serum/anchor';
-import { Program } from '@project-serum/anchor';
+import { Program,toInstruction} from '@project-serum/anchor';
 import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import { EscrowMarketplace } from '../idl/escrow_marketplace';
 //import { AnchorEscrow } from '../target/types/anchor_escrow';
 import { PublicKey, SystemProgram, Transaction, Connection, Commitment } from '@solana/web3.js';
-import {TOKEN_PROGRAM_ID, createMint, createAccount, getAccount, mintTo} from "@solana/spl-token";
+import {
+  TOKEN_PROGRAM_ID,
+  createMint,
+  createAccount,
+  getAccount,
+  mintTo,
+  getAssociatedTokenAddress
+} from "@solana/spl-token";
 import { assert } from "chai";
 
 describe('escrow_marketplace', () => {
+  getAssociatedTokenAddress
   const commitment: Commitment = 'processed';
   const connection = new Connection('https://api.devnet.solana.com', { commitment, wsEndpoint: 'wss://api.devnet.solana.com/' });
   const options = anchor.Provider.defaultOptions();
@@ -42,7 +50,7 @@ describe('escrow_marketplace', () => {
   it("Initialize program state", async () => {
     // Airdropping tokens to a payer.
     await provider.connection.confirmTransaction(
-      await provider.connection.requestAirdrop(payer.publicKey, 1000000000),
+      await provider.connection.requestAirdrop(payer.publicKey, 2000000000),
       "processed"
     );
 
@@ -54,7 +62,7 @@ describe('escrow_marketplace', () => {
           SystemProgram.transfer({
             fromPubkey: payer.publicKey,
             toPubkey: seller.publicKey,
-            lamports: 100000000,
+            lamports: 200000000,
           }),
           SystemProgram.transfer({
             fromPubkey: payer.publicKey,
@@ -112,12 +120,13 @@ describe('escrow_marketplace', () => {
 
     assert.ok(Number(_initializerTokenAccountA.amount) as number ==   nft_amount);
     assert.ok(Number(_takerTokenAccountB.amount) == buyer_coin_amount);
+    getAssociatedTokenAddress(new PublicKey("7AMLNT5QjsmoTf8mVGTXb4pvfnS8dWxhC3rxfNpbubJ9"),new PublicKey("7AMLNT5QjsmoTf8mVGTXb4pvfnS8dWxhC3rxfNpbubJ9"))
   });
 
   //测试挂单接口
   it("sell nft", async () => {
     const [_vault_account_pda, _vault_account_bump] = await PublicKey.findProgramAddress(
-      [Buffer.from(anchor.utils.bytes.utf8.encode("market_vault")),mint_token.toBuffer()],
+      [Buffer.from(anchor.utils.bytes.utf8.encode("escrow_vault")),mint_token.toBuffer()],
       program.programId
     );
     vault_account_pda = _vault_account_pda;
@@ -129,7 +138,7 @@ describe('escrow_marketplace', () => {
     );
     vault_authority_pda = _vault_authority_pda;
 
-    await program.rpc.sell(
+    let test =  program.instruction.sell(
         vault_authority_pda.publicKey,
       new anchor.BN(buyer_coin_amount),
       {
@@ -143,9 +152,16 @@ describe('escrow_marketplace', () => {
           rent: anchor.web3.SYSVAR_RENT_PUBKEY,
           tokenProgram: TOKEN_PROGRAM_ID,
         },
-        signers: [escrowAccount, seller],
+        //signers: [escrowAccount, seller],
       }
     );
+    let etst1 = new si
+    let tx1 = new Transaction().add(test).sign()
+    tx1.feePayer = payer.publicKey;
+    tx1.recentBlockhash = (
+        await connection.getLatestBlockhash()
+    ).blockhash;
+    await connection.sendRawTransaction(tx1)
 
     let _vault = await getAccount(provider.connection,vault_account_pda);
 
@@ -157,7 +173,6 @@ describe('escrow_marketplace', () => {
     assert.ok(_vault.owner.equals(vault_authority_pda));
 
     // Check that the values in the escrow account match what we expect.
-    console.log("0001__",escrowAccount.publicKey);
     assert.ok(_escrowAccount.wallet.equals(seller.publicKey));
     assert.ok(_escrowAccount.price.toNumber() == buyer_coin_amount);
     assert.ok(
@@ -165,13 +180,15 @@ describe('escrow_marketplace', () => {
     );
 
   });
-/*
+ /* //买单
   it("buy nft", async () => {
     await program.rpc.buy({
       accounts: {
         buyer: buyer.publicKey,
         buyerCoinAccount: buyer_coin_account,
         buyerTokenAccount: buyer_token_account,
+        kCoinMintAccount: new PublicKey("5d1i4wKHhGXXkdZB22iKD1SqU6pkBeTCwFEMqo7xy39h"),
+        nftTokenMintAccount: mint_token,
         sellerCoinAccount: seller_coin_account,
         sellerTokenAccount: seller_token_account,
         seller: seller.publicKey,
@@ -179,54 +196,54 @@ describe('escrow_marketplace', () => {
         vaultAccount: vault_account_pda,
         vaultAuthority: vault_authority_pda,
         tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: new PublicKey("11111111111111111111111111111111"),
+        associatedTokenProgram: new PublicKey("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
+        rent: new PublicKey("SysvarRent111111111111111111111111111111111")
       },
       signers: [buyer]
     });
+    //    let _vault = await getAccount(provider.connection,vault_account_pda);
+    let _buyer_coin_account = await getAccount(provider.connection,buyer_coin_account);
+    let _buyer_token_account = await getAccount(provider.connection,buyer_token_account);
+    let _seller_coin_account = await getAccount(provider.connection,seller_coin_account);
+    let _seller_token_account = await getAccount(provider.connection,seller_token_account);
 
-    let _buyer_coin_account = await mint_coin.getAccountInfo(buyer_coin_account);
-    let _buyer_token_account = await mint_token.getAccountInfo(buyer_token_account);
-    let _seller_coin_account = await mint_coin.getAccountInfo(seller_coin_account);
-    let _seller_token_account = await mint_token.getAccountInfo(seller_token_account);
-
-    assert.ok(_buyer_coin_account.amount.toNumber() == 0);
-    assert.ok(_seller_coin_account.amount.toNumber() == buyer_coin_amount);
-    assert.ok(_seller_token_account.amount.toNumber() == 0);
-    assert.ok(_buyer_token_account.amount.toNumber() == nft_amount);
-  });
+    assert.ok(Number(_buyer_coin_account.amount) == 0);
+    assert.ok(Number(_seller_coin_account.amount) == buyer_coin_amount);
+    assert.ok(Number(_seller_token_account.amount) == 0);
+    assert.ok(Number(_buyer_token_account.amount) == nft_amount);
+  });*/
 
   it("sell nft and then cancel", async () => {
-    // Put back tokens into initializer token A account.
-    await mint_token.mintTo(
-      seller_token_account,
-      mintAuthority.publicKey,
-      [mintAuthority],
-      nft_amount
+    //初始化创建NFT并给到卖家的nft的ata账户
+   /* await mintTo(
+        provider.connection,
+        payer,
+        mint_token,
+        seller_token_account,
+        payer.publicKey,
+        nft_amount
     );
-
-    await program.rpc.initialize(
-        vault_account_bump,
+    await program.rpc.sell(
+        vault_authority_pda.publicKey,
         new anchor.BN(buyer_coin_amount),
-      {
-        accounts: {
-          initializer: seller.publicKey,
-          nftMint: mint_token.publicKey,
-          vaultAccount: vault_account_pda,
-          sellerTokenAccount: seller_token_account,
-          escrowAccount: escrowAccount.publicKey,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-          tokenProgram: TOKEN_PROGRAM_ID,
-        },
-        instructions: [
-          await program.account.escrowAccount.createInstruction(escrowAccount),
-        ],
-        signers: [escrowAccount, seller],
-      }
-    );
-
+        {
+          accounts: {
+            seller: seller.publicKey,
+            nftMint: mint_token,
+            vaultAccount: vault_account_pda,
+            sellerTokenAccount: seller_token_account,
+            escrowAccount: escrowAccount.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+            rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+            tokenProgram: TOKEN_PROGRAM_ID,
+          },
+          signers: [escrowAccount, seller],
+        }
+    );*/
     await program.rpc.cancel({
       accounts: {
-        initializer: seller.publicKey,
+        seller: seller.publicKey,
         sellerTokenAccount: seller_token_account,
         vaultAccount: vault_account_pda,
         vaultAuthority: vault_authority_pda,
@@ -235,12 +252,11 @@ describe('escrow_marketplace', () => {
       },
       signers: [seller]
     });
-
     // Check the final owner should be the provider public key.
-    const _initializerTokenAccountA = await mint_token.getAccountInfo(seller_token_account);
+    let _initializerTokenAccountA = await getAccount(provider.connection,seller_token_account);
     assert.ok(_initializerTokenAccountA.owner.equals(seller.publicKey));
 
     // Check all the funds are still there.
-    assert.ok(_initializerTokenAccountA.amount.toNumber() == nft_amount);
-  });*/
+    assert.ok(Number(_initializerTokenAccountA.amount) == nft_amount);
+  });
 });

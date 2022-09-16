@@ -16,4 +16,5 @@ proxychains4 anchor test --skip-build --skip-deploy
 - 2、support sol pay
 - 3、more error code
 - 4、fix typescript testcase
+- 5、add global config state
 

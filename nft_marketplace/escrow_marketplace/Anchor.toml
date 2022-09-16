@@ -1,5 +1,5 @@
 [programs.devnet]
-escrow_marketplace = "Hv49DNdC6CUSwK3MWH5gj5BfLUU64r2ANXwdhaaRceGD"
+escrow_marketplace = "D8yTyPU9tSvJc8EuaUqRcvYsAj6SuPoYFg1uZG6istQB"
 
 [registry]
 url = "https://anchor.projectserum.com"

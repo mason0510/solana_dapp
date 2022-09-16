@@ -2,8 +2,9 @@ use anchor_lang::prelude::*;
 use anchor_spl::token;
 use anchor_spl::token::{Mint, SetAuthority, TokenAccount, Transfer};
 use anchor_spl::token::spl_token::instruction::AuthorityType;
-use crate::constants::{VAULT_SIGNER, ORDER_SPACE,VAULT_PREFIX};
-use crate::state::order::{SellOrder};
+use crate::constants::{VAULT_SIGNER, ORDER_SIZE, VAULT_PREFIX, MARKET_SETTING};
+use crate::errors::MarketError;
+use crate::state::order::{SellOrder, Settings};
 
 #[derive(Accounts)]
 #[instruction(vault_authority_key: Pubkey, price: u64)]
@@ -13,11 +14,12 @@ pub struct Sell<'info> {
     pub seller: AccountInfo<'info>,
     pub nft_mint: Account<'info, Mint>,
     //fixme: add other params as seed?
+    //目前是限制只用到nft_mint_key，表明一个nft只允许挂单一次
     #[account(
     init,
     seeds = [
         VAULT_PREFIX.as_ref(),
-        nft_mint.key().as_ref()
+        nft_mint.key().as_ref(),
     ],
     bump,
     payer = seller,
@@ -30,13 +32,15 @@ pub struct Sell<'info> {
     constraint = seller_token_account.amount == 1
     )]
     pub seller_token_account: Account<'info, TokenAccount>,
-    //fixme: replace with pda?
+    //replace with pda?
     #[account(
         init,
         payer = seller,
-        space = ORDER_SPACE,
+        space = ORDER_SIZE,
     )]
     pub escrow_account: Account<'info, SellOrder>,
+    #[account(seeds = [MARKET_SETTING.as_ref()],bump)]
+    pub setting_account: Box<Account<'info, Settings>>,
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub system_program: AccountInfo<'info>,
     pub rent: Sysvar<'info, Rent>,
@@ -68,6 +72,7 @@ impl<'info> Sell<'info> {
 
 pub fn process_sell(
     ctx: Context<Sell>,
+    receive_coin:Option<Pubkey>,
     price: u64,
 ) -> Result<()> {
     ctx.accounts.escrow_account.wallet = *ctx.accounts.seller.key;
@@ -89,7 +94,20 @@ pub fn process_sell(
 
     ctx.accounts.escrow_account.price = price;
 
-    //在owner里面直接指定了
+    //judge coin is supported or not
+    if let Some(coin) = receive_coin{
+        if ctx.accounts.setting_account.support_coins.iter().any(|&x|{
+            x == coin
+        }) {
+            ctx.accounts.escrow_account.receive_coin = Some(coin);
+        }else {
+            return Err(MarketError::NotSupportCoin.into());
+        }
+    }else {
+        ctx.accounts.escrow_account.receive_coin = None;
+    }
+
+    //replace normal key with pda?
     let (vault_authority, _vault_authority_bump) =
         Pubkey::find_program_address(&[
             VAULT_SIGNER,
