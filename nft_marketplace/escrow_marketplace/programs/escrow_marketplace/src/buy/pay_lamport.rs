@@ -16,11 +16,10 @@ use crate::constants::{MARKET_SETTING};
 pub struct PayLamport<'info> {
     #[account(
         signer,
-        mut,
-        constraint = *Rc::try_unwrap(buyer.lamports.clone()).unwrap().into_inner()  >= escrow_account.price   @MarketError::InSufficientFunds
+        mut
     )]
     /// CHECK: This is not dangerous because we don't read or write from this account
-    pub buyer: AccountInfo<'info>,
+    pub buyer:  AccountInfo<'info>,
     //fixme：确认下是否需要考虑手续费
     #[account(mut)]
     pub nft_token_mint_account: Box<Account<'info, Mint>>,  // nft mint account
@@ -62,7 +61,6 @@ impl<'info> PayLamport<'info> {
     fn into_transfer_to_initializer_context(
         &self,
     ) -> CpiContext<'_, '_, '_, 'info, system_program::Transfer<'info>> {
-        let test1 = *Rc::try_unwrap(self.buyer.lamports.clone()).unwrap().into_inner();
         CpiContext::new(
             self.system_program.to_account_info(),
             system_program::Transfer {
@@ -94,6 +92,10 @@ impl<'info> PayLamport<'info> {
 pub fn process_pay_lamport(ctx: Context<PayLamport>) -> Result<()> {
     if ctx.accounts.escrow_account.receive_coin.is_some(){
         return Err(MarketError::NotSupportCoin.into());
+    }
+
+    if ctx.accounts.buyer.lamports() < ctx.accounts.escrow_account.price {
+        return Err(MarketError::InSufficientFunds.into());
     }
 
     //todo: sub market fee

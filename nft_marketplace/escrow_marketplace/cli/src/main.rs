@@ -180,13 +180,13 @@ fn main() -> Result<()> {
     //let mint_key= Pubkey::from_str("Hpp4QyZXHjm3S2GGCbWcjAfPMWuEYszwo53SKM5MCeLy").unwrap();
     //cancel(&client,Pubkey::from_str("Hpp4QyZXHjm3S2GGCbWcjAfPMWuEYszwo53SKM5MCeLy").unwrap(),Pubkey::from_str("CfAHnQ13nQP5aXYzS3kKuaLr8XwLJftFLzhjcpu1Cenp").unwrap());
    let escrow_account1 = sell_and_receive_lamport(&client,mint_key.clone());
-    list_orders();
+/*    list_orders();
     cancel(&client,mint_key.clone(),escrow_account1);
-    list_orders();
-    /*let escrow_account2 = sell(&client,mint_key.clone());
-    list_orders();
-    buy(&client,mint_key.clone(),escrow_account2);
     list_orders();*/
+    //let escrow_account2 = sell(&client,mint_key.clone());
+    list_orders();
+    buy_and_pay_lamport(&client,mint_key.clone(),escrow_account1);
+    list_orders();
     Ok(())
 }
 fn init_settings(client: &Client){
