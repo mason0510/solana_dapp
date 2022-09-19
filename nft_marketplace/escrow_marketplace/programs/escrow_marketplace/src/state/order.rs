@@ -1,4 +1,4 @@
-use anchor_lang::{prelude::*,AnchorSerialize,AnchorDeserialize};
+use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 
 #[account]
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub struct SellOrder {
 //space 32+5*32+2+8=202
 //默认支持sol
 #[account]
-#[derive(Debug,Default)]
+#[derive(Debug, Default)]
 pub struct Settings {
     //market owner
     pub authority: Pubkey,

@@ -1,28 +1,21 @@
-use std::borrow::Borrow;
-use std::ops::{Deref, DerefMut};
-use std::rc::Rc;
-use anchor_lang::prelude::*;
-use anchor_spl::{associated_token, token};
-use anchor_spl::token::{CloseAccount, Mint, TokenAccount, Transfer};
 use crate::constants::*;
 use crate::errors::MarketError;
-use std::str::FromStr;
-use anchor_lang::system_program;
-use crate::state::order::{SellOrder, Settings};
-use crate::constants::{MARKET_SETTING};
+use anchor_lang::prelude::*;
+use anchor_spl::token::{CloseAccount, Mint, TokenAccount, Transfer};
+use anchor_spl::{associated_token, token};
 
+use crate::constants::MARKET_SETTING;
+use crate::state::order::{SellOrder, Settings};
+use anchor_lang::system_program;
 
 #[derive(Accounts)]
 pub struct PayLamport<'info> {
-    #[account(
-        signer,
-        mut
-    )]
+    #[account(signer, mut)]
     /// CHECK: This is not dangerous because we don't read or write from this account
-    pub buyer:  AccountInfo<'info>,
+    pub buyer: AccountInfo<'info>,
     //fixme：确认下是否需要考虑手续费
     #[account(mut)]
-    pub nft_token_mint_account: Box<Account<'info, Mint>>,  // nft mint account
+    pub nft_token_mint_account: Box<Account<'info, Mint>>, // nft mint account
     #[account(
     init_if_needed,
     payer = buyer,
@@ -66,7 +59,7 @@ impl<'info> PayLamport<'info> {
             system_program::Transfer {
                 from: self.buyer.to_account_info(),
                 to: self.seller.to_account_info(),
-            }
+            },
         )
     }
 
@@ -90,7 +83,7 @@ impl<'info> PayLamport<'info> {
 }
 
 pub fn process_pay_lamport(ctx: Context<PayLamport>) -> Result<()> {
-    if ctx.accounts.escrow_account.receive_coin.is_some(){
+    if ctx.accounts.escrow_account.receive_coin.is_some() {
         return Err(MarketError::NotSupportCoin.into());
     }
 
@@ -101,15 +94,26 @@ pub fn process_pay_lamport(ctx: Context<PayLamport>) -> Result<()> {
     //todo: sub market fee
     system_program::transfer(
         ctx.accounts.into_transfer_to_initializer_context(),
-        ctx.accounts.escrow_account.price
+        ctx.accounts.escrow_account.price,
     )?;
 
-    let mint_account_seed = ctx.accounts.escrow_account.mint_account.key().as_ref().to_owned();
-    let (_vault_authority, vault_authority_bump) =
-        Pubkey::find_program_address(&[VAULT_SIGNER,mint_account_seed.as_slice()], ctx.program_id);
-    let authority_seeds = &[&VAULT_SIGNER[..], mint_account_seed.as_slice(),&[vault_authority_bump]];
+    let mint_account_seed = ctx
+        .accounts
+        .escrow_account
+        .mint_account
+        .key()
+        .as_ref()
+        .to_owned();
+    let (_vault_authority, vault_authority_bump) = Pubkey::find_program_address(
+        &[VAULT_SIGNER, mint_account_seed.as_slice()],
+        ctx.program_id,
+    );
+    let authority_seeds = &[
+        &VAULT_SIGNER[..],
+        mint_account_seed.as_slice(),
+        &[vault_authority_bump],
+    ];
     //send K coin to seller from buyer
-
 
     //send nft to buyer from vault_account
     token::transfer(

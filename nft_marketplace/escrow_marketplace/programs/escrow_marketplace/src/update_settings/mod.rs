@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token;
+
 use crate::constants::MARKET_SETTING;
 use crate::state::order::Settings;
 
@@ -14,7 +14,7 @@ pub fn process_update_settings(
     ctx: Context<UpdateSettings>,
     support_coins: Vec<Pubkey>,
     fee_ratio: u16,
-    new_authority: Option<Pubkey>
+    new_authority: Option<Pubkey>,
 ) -> Result<()> {
     msg!("update state");
     ctx.accounts.setting_account.support_coins = support_coins;
@@ -24,4 +24,3 @@ pub fn process_update_settings(
     ctx.accounts.setting_account.fee_ratio = fee_ratio;
     Ok(())
 }
-

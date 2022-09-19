@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token;
-use crate::constants::{MARKET_SETTING,SETTING_SIZE};
+
+use crate::constants::{MARKET_SETTING, SETTING_SIZE};
 use crate::state::order::Settings;
 
 pub fn process_init_settings(
@@ -28,5 +28,4 @@ pub struct InitSettings<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
     pub system_program: Program<'info, System>,
-
 }

@@ -1,16 +1,15 @@
-use anchor_lang::prelude::*;
-use anchor_spl::{associated_token, token};
-use anchor_spl::token::{CloseAccount, Mint, TokenAccount, Transfer};
+use crate::constants::MARKET_SETTING;
 use crate::constants::*;
 use crate::errors::MarketError;
-use std::str::FromStr;
 use crate::state::order::{SellOrder, Settings};
-use crate::constants::{MARKET_SETTING};
-
+use anchor_lang::prelude::*;
+use anchor_spl::token::{CloseAccount, Mint, TokenAccount, Transfer};
+use anchor_spl::{associated_token, token};
+use std::str::FromStr;
 
 #[derive(Accounts)]
 pub struct PaySplToken<'info> {
-    #[account(signer,mut)]
+    #[account(signer, mut)]
     /// CHECK: This is not dangerous because we don't read or write from this account
     pub buyer: AccountInfo<'info>,
     #[account(
@@ -18,10 +17,10 @@ pub struct PaySplToken<'info> {
         constraint = buyer_coin_account.amount >= escrow_account.price         @ MarketError::InSufficientFunds,
         constraint = buyer_coin_account.mint == Pubkey::from_str(K_COIN).unwrap() @ MarketError::NotSupportCoin,
     )]
-    pub buyer_coin_account: Box<Account<'info, TokenAccount>>,  // K coin
+    pub buyer_coin_account: Box<Account<'info, TokenAccount>>, // K coin
     //这里指定coin的mint地址，并且对应的ata进行约束，对coin的判断放在函数中
-    pub k_coin_mint_account: Box<Account<'info, Mint>>,  // nft mint account
-    pub nft_token_mint_account: Box<Account<'info, Mint>>,  // nft mint account
+    pub k_coin_mint_account: Box<Account<'info, Mint>>, // nft mint account
+    pub nft_token_mint_account: Box<Account<'info, Mint>>, // nft mint account
     #[account(
     init_if_needed,
     payer = buyer,
@@ -70,10 +69,7 @@ impl<'info> PaySplToken<'info> {
     ) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         let cpi_accounts = Transfer {
             from: self.buyer_coin_account.to_account_info().clone(),
-            to: self
-                .seller_coin_account
-                .to_account_info()
-                .clone(),
+            to: self.seller_coin_account.to_account_info().clone(),
             authority: self.buyer.clone(),
         };
         CpiContext::new(self.token_program.clone(), cpi_accounts)
@@ -99,17 +95,29 @@ impl<'info> PaySplToken<'info> {
 }
 
 pub fn process_pay_spl_token(ctx: Context<PaySplToken>) -> Result<()> {
-
     if ctx.accounts.escrow_account.receive_coin.is_none()
-        || ctx.accounts.k_coin_mint_account.key() != ctx.accounts.escrow_account.receive_coin.unwrap()
+        || ctx.accounts.k_coin_mint_account.key()
+            != ctx.accounts.escrow_account.receive_coin.unwrap()
     {
         return Err(MarketError::NotSupportCoin.into());
     }
 
-    let mint_account_seed = ctx.accounts.escrow_account.mint_account.key().as_ref().to_owned();
-    let (_vault_authority, vault_authority_bump) =
-        Pubkey::find_program_address(&[VAULT_SIGNER,mint_account_seed.as_slice()], ctx.program_id);
-    let authority_seeds = &[&VAULT_SIGNER[..], mint_account_seed.as_slice(),&[vault_authority_bump]];
+    let mint_account_seed = ctx
+        .accounts
+        .escrow_account
+        .mint_account
+        .key()
+        .as_ref()
+        .to_owned();
+    let (_vault_authority, vault_authority_bump) = Pubkey::find_program_address(
+        &[VAULT_SIGNER, mint_account_seed.as_slice()],
+        ctx.program_id,
+    );
+    let authority_seeds = &[
+        &VAULT_SIGNER[..],
+        mint_account_seed.as_slice(),
+        &[vault_authority_bump],
+    ];
     //send K coin to seller from buyer
     //todo: sub market fee
     token::transfer(

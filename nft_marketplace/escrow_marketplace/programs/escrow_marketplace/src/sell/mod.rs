@@ -1,10 +1,10 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token;
-use anchor_spl::token::{Mint, SetAuthority, TokenAccount, Transfer};
-use anchor_spl::token::spl_token::instruction::AuthorityType;
-use crate::constants::{VAULT_SIGNER, ORDER_SIZE, VAULT_PREFIX, MARKET_SETTING};
+use crate::constants::{MARKET_SETTING, ORDER_SIZE, VAULT_PREFIX, VAULT_SIGNER};
 use crate::errors::MarketError;
 use crate::state::order::{SellOrder, Settings};
+use anchor_lang::prelude::*;
+use anchor_spl::token;
+use anchor_spl::token::spl_token::instruction::AuthorityType;
+use anchor_spl::token::{Mint, SetAuthority, TokenAccount, Transfer};
 
 #[derive(Accounts)]
 #[instruction(vault_authority_key: Pubkey, price: u64)]
@@ -51,10 +51,7 @@ pub struct Sell<'info> {
 impl<'info> Sell<'info> {
     fn into_transfer_to_pda_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         let cpi_accounts = Transfer {
-            from: self
-                .seller_token_account
-                .to_account_info()
-                .clone(),
+            from: self.seller_token_account.to_account_info().clone(),
             to: self.vault_account.to_account_info().clone(),
             authority: self.seller.clone(),
         };
@@ -70,59 +67,47 @@ impl<'info> Sell<'info> {
     }
 }
 
-pub fn process_sell(
-    ctx: Context<Sell>,
-    receive_coin:Option<Pubkey>,
-    price: u64,
-) -> Result<()> {
+pub fn process_sell(ctx: Context<Sell>, receive_coin: Option<Pubkey>, price: u64) -> Result<()> {
     ctx.accounts.escrow_account.wallet = *ctx.accounts.seller.key;
-    ctx.accounts
-        .escrow_account
-        .nft_token_account = *ctx
-        .accounts
-        .seller_token_account
-        .to_account_info()
-        .key;
+    ctx.accounts.escrow_account.nft_token_account =
+        *ctx.accounts.seller_token_account.to_account_info().key;
 
-    ctx.accounts
-        .escrow_account
-        .mint_account = *ctx
-        .accounts
-        .nft_mint
-        .to_account_info()
-        .key;
+    ctx.accounts.escrow_account.mint_account = *ctx.accounts.nft_mint.to_account_info().key;
 
     ctx.accounts.escrow_account.price = price;
 
     //judge coin is supported or not
-    if let Some(coin) = receive_coin{
-        if ctx.accounts.setting_account.support_coins.iter().any(|&x|{
-            x == coin
-        }) {
+    if let Some(coin) = receive_coin {
+        if ctx
+            .accounts
+            .setting_account
+            .support_coins
+            .iter()
+            .any(|&x| x == coin)
+        {
             ctx.accounts.escrow_account.receive_coin = Some(coin);
-        }else {
+        } else {
             return Err(MarketError::NotSupportCoin.into());
         }
-    }else {
+    } else {
         ctx.accounts.escrow_account.receive_coin = None;
     }
 
     //replace normal key with pda?
-    let (vault_authority, _vault_authority_bump) =
-        Pubkey::find_program_address(&[
+    let (vault_authority, _vault_authority_bump) = Pubkey::find_program_address(
+        &[
             VAULT_SIGNER,
-            ctx.accounts.nft_mint.to_account_info().key.as_ref()
-        ], ctx.program_id);
+            ctx.accounts.nft_mint.to_account_info().key.as_ref(),
+        ],
+        ctx.program_id,
+    );
     token::set_authority(
         ctx.accounts.into_set_authority_context(),
         AuthorityType::AccountOwner,
         Some(vault_authority),
     )?;
 
-    token::transfer(
-        ctx.accounts.into_transfer_to_pda_context(),
-        1,
-    )?;
+    token::transfer(ctx.accounts.into_transfer_to_pda_context(), 1)?;
 
     Ok(())
 }

@@ -11,5 +11,5 @@ pub enum MarketError {
     #[msg("SellerNotMatched")]
     SellerNotMatched,
     #[msg("UnknownError")]
-    UnknownError
+    UnknownError,
 }
