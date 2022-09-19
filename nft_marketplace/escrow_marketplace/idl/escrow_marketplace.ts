@@ -31,6 +31,11 @@ export type EscrowMarketplace = {
           "isSigner": true
         },
         {
+          "name": "settingAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -50,6 +55,12 @@ export type EscrowMarketplace = {
         {
           "name": "vaultAuthorityKey",
           "type": "publicKey"
+        },
+        {
+          "name": "receiveCoin",
+          "type": {
+            "option": "publicKey"
+          }
         },
         {
           "name": "price",
@@ -94,7 +105,78 @@ export type EscrowMarketplace = {
       "args": []
     },
     {
-      "name": "buy",
+      "name": "buyAndPayLamport",
+      "accounts": [
+        {
+          "name": "buyer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "nftTokenMintAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "buyerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "sellerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "seller",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "escrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "settingAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "buyAndPaySplToken",
       "accounts": [
         {
           "name": "buyer",
@@ -147,6 +229,11 @@ export type EscrowMarketplace = {
           "isSigner": false
         },
         {
+          "name": "settingAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "vaultAuthority",
           "isMut": false,
           "isSigner": false
@@ -173,6 +260,71 @@ export type EscrowMarketplace = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "initSettings",
+      "accounts": [
+        {
+          "name": "settingAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "supportCoins",
+          "type": {
+            "vec": "publicKey"
+          }
+        },
+        {
+          "name": "feeRatio",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "updateSettings",
+      "accounts": [
+        {
+          "name": "settingAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "supportCoins",
+          "type": {
+            "vec": "publicKey"
+          }
+        },
+        {
+          "name": "feeRatio",
+          "type": "u16"
+        },
+        {
+          "name": "newAuthority",
+          "type": {
+            "option": "publicKey"
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -194,24 +346,36 @@ export type EscrowMarketplace = {
             "type": "publicKey"
           },
           {
+            "name": "receiveCoin",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
             "name": "price",
             "type": "u64"
           }
         ]
       }
-    }
-  ],
-  "types": [
+    },
     {
-      "name": "SupportCoin",
+      "name": "settings",
       "type": {
-        "kind": "enum",
-        "variants": [
+        "kind": "struct",
+        "fields": [
           {
-            "name": "KCoin",
-            "fields": [
-              "publicKey"
-            ]
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "supportCoins",
+            "type": {
+              "vec": "publicKey"
+            }
+          },
+          {
+            "name": "feeRatio",
+            "type": "u16"
           }
         ]
       }
@@ -279,6 +443,11 @@ export const IDL: EscrowMarketplace = {
           "isSigner": true
         },
         {
+          "name": "settingAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -298,6 +467,12 @@ export const IDL: EscrowMarketplace = {
         {
           "name": "vaultAuthorityKey",
           "type": "publicKey"
+        },
+        {
+          "name": "receiveCoin",
+          "type": {
+            "option": "publicKey"
+          }
         },
         {
           "name": "price",
@@ -342,7 +517,78 @@ export const IDL: EscrowMarketplace = {
       "args": []
     },
     {
-      "name": "buy",
+      "name": "buyAndPayLamport",
+      "accounts": [
+        {
+          "name": "buyer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "nftTokenMintAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "buyerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "sellerTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "seller",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "escrowAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "settingAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "vaultAuthority",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "buyAndPaySplToken",
       "accounts": [
         {
           "name": "buyer",
@@ -395,6 +641,11 @@ export const IDL: EscrowMarketplace = {
           "isSigner": false
         },
         {
+          "name": "settingAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "vaultAuthority",
           "isMut": false,
           "isSigner": false
@@ -421,6 +672,71 @@ export const IDL: EscrowMarketplace = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "initSettings",
+      "accounts": [
+        {
+          "name": "settingAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "supportCoins",
+          "type": {
+            "vec": "publicKey"
+          }
+        },
+        {
+          "name": "feeRatio",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "updateSettings",
+      "accounts": [
+        {
+          "name": "settingAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        }
+      ],
+      "args": [
+        {
+          "name": "supportCoins",
+          "type": {
+            "vec": "publicKey"
+          }
+        },
+        {
+          "name": "feeRatio",
+          "type": "u16"
+        },
+        {
+          "name": "newAuthority",
+          "type": {
+            "option": "publicKey"
+          }
+        }
+      ]
     }
   ],
   "accounts": [
@@ -442,24 +758,36 @@ export const IDL: EscrowMarketplace = {
             "type": "publicKey"
           },
           {
+            "name": "receiveCoin",
+            "type": {
+              "option": "publicKey"
+            }
+          },
+          {
             "name": "price",
             "type": "u64"
           }
         ]
       }
-    }
-  ],
-  "types": [
+    },
     {
-      "name": "SupportCoin",
+      "name": "settings",
       "type": {
-        "kind": "enum",
-        "variants": [
+        "kind": "struct",
+        "fields": [
           {
-            "name": "KCoin",
-            "fields": [
-              "publicKey"
-            ]
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "supportCoins",
+            "type": {
+              "vec": "publicKey"
+            }
+          },
+          {
+            "name": "feeRatio",
+            "type": "u16"
           }
         ]
       }
