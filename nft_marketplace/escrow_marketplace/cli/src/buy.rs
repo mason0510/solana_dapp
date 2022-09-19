@@ -68,18 +68,18 @@ pub fn buy_and_pay_lamport(client: &Client, nft_mint_key: Pubkey, escrow_account
     let buyer_res = program
         .request()
         .accounts(market_accounts::PayLamport {
-            buyer: buyer.pubkey(),
+            buyer: buyer.pubkey(),                                                  //买家wallet的key
             //buyer_coin_account,
             //k_coin_mint_account: Pubkey::from_str(K_COIN).unwrap(),
-            nft_token_mint_account: nft_mint_key,
-            buyer_token_account,
+            nft_token_mint_account: nft_mint_key,                                   //nft地址
+            buyer_token_account,                                                    //该nft分配给买家用户的地址
             //seller_coin_account,
-            seller_token_account,
-            seller: seller.pubkey(),
-            escrow_account: escrow_account_key,
-            vault_account: vault_account_pda,
-            vault_authority: vault_authority_pda,
-            setting_account: market_setting_pda,
+            seller_token_account,                                                   //该nft分配给卖家用户的地址
+            seller: seller.pubkey(),                                                //卖家wallet key
+            escrow_account: escrow_account_key,                                     //订单详情地址
+            vault_account: vault_account_pda,                                       //合约分配给该nft的托管地址
+            vault_authority: vault_authority_pda,                                   //vault_account的写权限地址
+            setting_account: market_setting_pda,                                    //市场全局设置地址，手续费、支持的币种等，只有项目方有权限更改
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
             // sys account
             associated_token_program: Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID)

@@ -93,7 +93,7 @@ pub fn list_orders() {
             }
         })
         .collect::<Vec<Option<Metadata>>>();
-    println!("all sell orders size {:#?}", order_infos.len());
+    println!("all sell orders size {:#?}", order_infos);
 }
 
 pub fn sell4kcoin() {
@@ -119,7 +119,7 @@ pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey) -> Pubkey {
         &[MARKET_SETTING],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap(),
     );
-
+    //该nft分配给对于wallet用户的地址
     let seller_token_account = get_associated_token_address(&payer_key, &nft_mint_key);
     println!(
         "escrow_account key {},seller_token_account {},vault_authority_pda {}",
@@ -136,12 +136,12 @@ pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey) -> Pubkey {
     let sell_res = program
         .request()
         .accounts(market_accounts::Sell {
-            seller: payer_key,
-            nft_mint: nft_mint_key,
-            vault_account: vault_account_pda,
-            seller_token_account: seller_token_account,
-            setting_account: market_setting_pda,
-            escrow_account: escrow_account.pubkey(),
+            seller: payer_key,                              //用户wallet
+            nft_mint: nft_mint_key,                         //nft地址
+            vault_account: vault_account_pda,               //nft在合约上的托管地址
+            seller_token_account: seller_token_account,     //该nft分配给对于wallet用户的地址
+            setting_account: market_setting_pda,            //市场全局设置，手续费、支持的币种等，只有项目方有权限更改
+            escrow_account: escrow_account.pubkey(),        //订单详情存储地址
             system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
             rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),

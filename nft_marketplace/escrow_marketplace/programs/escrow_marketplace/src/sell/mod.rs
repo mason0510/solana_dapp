@@ -15,6 +15,7 @@ pub struct Sell<'info> {
     pub nft_mint: Account<'info, Mint>,
     //fixme: add other params as seed?
     //目前是限制只用到nft_mint_key，表明一个nft只允许挂单一次
+    //token::authority由于只能用account作为值所以目前暂时无法直接用pda作为权限，而是先随机key然后更换权限
     #[account(
     init,
     seeds = [
@@ -93,7 +94,6 @@ pub fn process_sell(ctx: Context<Sell>, receive_coin: Option<Pubkey>, price: u64
         ctx.accounts.escrow_account.receive_coin = None;
     }
 
-    //replace normal key with pda?
     let (vault_authority, _vault_authority_bump) = Pubkey::find_program_address(
         &[
             VAULT_SIGNER,

@@ -52,11 +52,11 @@ pub fn cancel(client: &Client, nft_mint_key: Pubkey, escrow_account_key: Pubkey)
     let cancel_res = program
         .request()
         .accounts(market_accounts::Cancel {
-            seller: payer_key,
-            seller_token_account: seller_token_account,
-            vault_account: vault_account_pda,
-            vault_authority: vault_authority_pda,
-            escrow_account: escrow_account_key,
+            seller: payer_key,                                              //用户wallet
+            seller_token_account: seller_token_account,                     //该nft分配给对于wallet用户的地址
+            vault_account: vault_account_pda,                               //合约分配给该nft的托管地址
+            vault_authority: vault_authority_pda,                           //vault_account的权限控制地址
+            escrow_account: escrow_account_key,                             //用户订单详情地址
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
         })
         .args(market_instructions::Cancel)
