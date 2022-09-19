@@ -1,4 +1,4 @@
-use crate::constants::{MARKET_SETTING, ORDER_SIZE, VAULT_PREFIX, VAULT_SIGNER};
+use crate::constants::{MARKET_SETTING, ORDER_SIZE, VAULT_PREFIX, VAULT_SIGNER, ESCROW_INFO};
 use crate::errors::MarketError;
 use crate::state::order::{SellOrder, Settings};
 use anchor_lang::prelude::*;
@@ -36,6 +36,11 @@ pub struct Sell<'info> {
     //replace with pda?
     #[account(
         init,
+        seeds = [
+        ESCROW_INFO.as_ref(),
+        nft_mint.key().as_ref(),
+        ],
+        bump,
         payer = seller,
         space = ORDER_SIZE,
     )]

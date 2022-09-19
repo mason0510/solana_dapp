@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{CloseAccount, Mint, TokenAccount, Transfer};
 use anchor_spl::{associated_token, token};
 
-use crate::constants::MARKET_SETTING;
+use crate::constants::{MARKET_SETTING, ESCROW_INFO};
 use crate::state::order::{SellOrder, Settings};
 use anchor_lang::system_program;
 
@@ -30,6 +30,11 @@ pub struct PayLamport<'info> {
     pub seller: AccountInfo<'info>,
     #[account(
     mut,
+    seeds = [
+    ESCROW_INFO.as_ref(),
+    escrow_account.mint_account.as_ref(),
+    ],
+    bump,
     constraint = escrow_account.nft_token_account == *seller_token_account.to_account_info().key,
     constraint = escrow_account.mint_account == *nft_token_mint_account.to_account_info().key                @ MarketError::NftNotMatched,
     constraint = escrow_account.wallet == *seller.key                                                        @ MarketError::SellerNotMatched,

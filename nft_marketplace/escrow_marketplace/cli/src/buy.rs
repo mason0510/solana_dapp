@@ -23,7 +23,7 @@ use spl_associated_token_account::get_associated_token_address;
 use escrow_marketplace::accounts as market_accounts;
 use escrow_marketplace::instruction as market_instructions;
 
-use escrow_marketplace::constants::{MARKET_SETTING, VAULT_PREFIX, VAULT_SIGNER};
+use escrow_marketplace::constants::{ESCROW_INFO, MARKET_SETTING, VAULT_PREFIX, VAULT_SIGNER};
 
 use super::*;
 
@@ -31,7 +31,7 @@ fn buy_and_pay_kcoin() {
     todo!()
 }
 
-pub fn buy_and_pay_lamport(client: &Client, nft_mint_key: Pubkey, escrow_account_key: Pubkey) {
+pub fn buy_and_pay_lamport(client: &Client, nft_mint_key: Pubkey) {
     let program = client.program(Pubkey::from_str(ESCROW_MARKETPLACE).unwrap());
     let _authority = program.payer();
     //5wEmePkkXAWYYvvWQDv4Mbenma1jWvzCbt3rK9ihmrqH
@@ -57,6 +57,11 @@ pub fn buy_and_pay_lamport(client: &Client, nft_mint_key: Pubkey, escrow_account
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap(),
     );
 
+    let (escrow_info_pda, _escrow_account_bump) = Pubkey::find_program_address(
+        &[ESCROW_INFO,nft_mint_key.as_ref()],
+        &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap(),
+    );
+
     let _seller_coin_account =
         get_associated_token_address(&seller.pubkey(), &Pubkey::from_str(K_COIN).unwrap());
     let seller_token_account = get_associated_token_address(&seller.pubkey(), &nft_mint_key);
@@ -76,7 +81,7 @@ pub fn buy_and_pay_lamport(client: &Client, nft_mint_key: Pubkey, escrow_account
             //seller_coin_account,
             seller_token_account,                                                   //该nft分配给卖家用户的地址
             seller: seller.pubkey(),                                                //卖家wallet key
-            escrow_account: escrow_account_key,                                     //订单详情地址
+            escrow_account: escrow_info_pda,                                     //订单详情地址
             vault_account: vault_account_pda,                                       //合约分配给该nft的托管地址
             vault_authority: vault_authority_pda,                                   //vault_account的写权限地址
             setting_account: market_setting_pda,                                    //市场全局设置地址，手续费、支持的币种等，只有项目方有权限更改

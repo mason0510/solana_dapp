@@ -42,7 +42,7 @@ use {
 use escrow_marketplace::accounts as market_accounts;
 use escrow_marketplace::instruction as market_instructions;
 
-use escrow_marketplace::constants::{MARKET_SETTING, ORDER_SIZE, VAULT_PREFIX, VAULT_SIGNER};
+use escrow_marketplace::constants::{MARKET_SETTING, ORDER_SIZE, VAULT_PREFIX, VAULT_SIGNER,ESCROW_INFO};
 use solana_sdk::account::ReadableAccount;
 
 use crate::utils::find_metadata_pda;
@@ -93,14 +93,14 @@ pub fn list_orders() {
             }
         })
         .collect::<Vec<Option<Metadata>>>();
-    println!("all sell orders size {:#?}", order_infos);
+    println!("all sell orders size {}", order_infos.len());
 }
 
 pub fn sell4kcoin() {
     todo!()
 }
 
-pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey) -> Pubkey {
+pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey){
     let program = client.program(Pubkey::from_str(ESCROW_MARKETPLACE).unwrap());
     let payer_key = program.payer();
     let escrow_account = Keypair::new();
@@ -114,6 +114,12 @@ pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey) -> Pubkey {
         &[VAULT_SIGNER],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap(),
     );
+
+    let (escrow_info_pda, _escrow_account_bump) = Pubkey::find_program_address(
+        &[ESCROW_INFO,nft_mint_key.as_ref()],
+        &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap(),
+    );
+
 
     let (market_setting_pda, _) = Pubkey::find_program_address(
         &[MARKET_SETTING],
@@ -141,7 +147,7 @@ pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey) -> Pubkey {
             vault_account: vault_account_pda,               //nft在合约上的托管地址
             seller_token_account: seller_token_account,     //该nft分配给对于wallet用户的地址
             setting_account: market_setting_pda,            //市场全局设置，手续费、支持的币种等，只有项目方有权限更改
-            escrow_account: escrow_account.pubkey(),        //订单详情存储地址
+            escrow_account: escrow_info_pda,        //订单详情存储地址
             system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
             rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
@@ -151,7 +157,7 @@ pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey) -> Pubkey {
             receive_coin: None,
             price: 1_000_000_000,
         }) //todo: test pay kcoin
-        .signer(&escrow_account)
+        //.signer(&escrow_account)
         .send()
         .unwrap();
 
@@ -161,5 +167,5 @@ pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey) -> Pubkey {
         vault_account_pda
     );
     println!("finished sell lamport, call res {}", sell_res.to_string());
-    escrow_account.pubkey()
+    //escrow_account.pubkey()
 }

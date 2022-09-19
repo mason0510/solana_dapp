@@ -4,6 +4,7 @@ import NodeWallet from '@project-serum/anchor/dist/cjs/nodewallet';
 import { EscrowMarketplace } from '../idl/escrow_marketplace';
 //import { AnchorEscrow } from '../target/types/anchor_escrow';
 import { PublicKey, SystemProgram, Transaction, Connection, Commitment } from '@solana/web3.js';
+import {ASSOCIATED_TOKEN_PROGRAM_ID} from '@solana/spl-token'
 import {
   TOKEN_PROGRAM_ID,
   createMint,

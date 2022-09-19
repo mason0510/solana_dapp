@@ -1,6 +1,7 @@
 pub const K_COIN: &'static str = "5d1i4wKHhGXXkdZB22iKD1SqU6pkBeTCwFEMqo7xy39h";
 pub const VAULT_SIGNER: &[u8] = b"escrow_owner";
 pub const VAULT_PREFIX: &[u8] = b"escrow_vault";
+pub const ESCROW_INFO: &[u8] = b"escrow_info";
 pub const MARKET_SETTING: &[u8] = b"market_setting";
 //pub const ESCROW: &[u8] = b"market_escrow";
 pub const ORDER_SIZE: usize = 8 +      // anchor discriminator

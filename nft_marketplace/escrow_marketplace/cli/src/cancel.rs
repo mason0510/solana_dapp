@@ -28,11 +28,11 @@ use {
 use escrow_marketplace::accounts as market_accounts;
 use escrow_marketplace::instruction as market_instructions;
 
-use escrow_marketplace::constants::{VAULT_PREFIX, VAULT_SIGNER};
+use escrow_marketplace::constants::{ESCROW_INFO, VAULT_PREFIX, VAULT_SIGNER};
 
 use crate::{ESCROW_MARKETPLACE, SPL_PROGRAM_ID};
 
-pub fn cancel(client: &Client, nft_mint_key: Pubkey, escrow_account_key: Pubkey) {
+pub fn cancel(client: &Client, nft_mint_key: Pubkey) {
     let program = client.program(Pubkey::from_str(ESCROW_MARKETPLACE).unwrap());
     let _authority = program.payer();
     //let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
@@ -47,6 +47,11 @@ pub fn cancel(client: &Client, nft_mint_key: Pubkey, escrow_account_key: Pubkey)
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap(),
     );
 
+    let (escrow_info_pda, _escrow_account_bump) = Pubkey::find_program_address(
+        &[ESCROW_INFO,nft_mint_key.as_ref()],
+        &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap(),
+    );
+
     let seller_token_account = get_associated_token_address(&payer_key, &nft_mint_key);
 
     let cancel_res = program
@@ -56,7 +61,7 @@ pub fn cancel(client: &Client, nft_mint_key: Pubkey, escrow_account_key: Pubkey)
             seller_token_account: seller_token_account,                     //该nft分配给对于wallet用户的地址
             vault_account: vault_account_pda,                               //合约分配给该nft的托管地址
             vault_authority: vault_authority_pda,                           //vault_account的权限控制地址
-            escrow_account: escrow_account_key,                             //用户订单详情地址
+            escrow_account: escrow_info_pda,                             //用户订单详情地址
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
         })
         .args(market_instructions::Cancel)
@@ -64,7 +69,7 @@ pub fn cancel(client: &Client, nft_mint_key: Pubkey, escrow_account_key: Pubkey)
         .unwrap();
     println!(
         "finished cancel order {}, call res {}",
-        escrow_account_key.to_string(),
+        vault_account_pda.to_string(),
         cancel_res.to_string()
     );
 }

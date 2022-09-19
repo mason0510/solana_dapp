@@ -1,4 +1,4 @@
-use crate::constants::VAULT_SIGNER;
+use crate::constants::{VAULT_SIGNER, ESCROW_INFO};
 use crate::state::order::SellOrder;
 use anchor_lang::prelude::*;
 use anchor_spl::token;
@@ -17,6 +17,11 @@ pub struct Cancel<'info> {
     pub seller_token_account: Account<'info, TokenAccount>,
     #[account(
     mut,
+    seeds = [
+    ESCROW_INFO.as_ref(),
+    escrow_account.mint_account.as_ref(),
+    ],
+    bump,
     constraint = escrow_account.wallet == *seller.key,
     constraint = escrow_account.nft_token_account == *seller_token_account.to_account_info().key,
     close = seller

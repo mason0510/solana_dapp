@@ -72,16 +72,16 @@ fn test_sell(client: &Client) {
 }
 fn test_sell_and_cancel(client: &Client) {
     let nft_mint_key = nft::simple_mint(client).unwrap();
-    let escrow_key = sell::sell4lamport(client, nft_mint_key);
+    sell::sell4lamport(client, nft_mint_key);
     list_orders();
-    cancel::cancel(client, nft_mint_key, escrow_key);
+    cancel::cancel(client, nft_mint_key);
     list_orders();
 }
 fn test_sell_and_buy(client: &Client) {
     let nft_mint_key = nft::simple_mint(client).unwrap();
     list_orders();
-    let escrow_key = sell::sell4lamport(client, nft_mint_key);
-    buy::buy_and_pay_lamport(client, nft_mint_key, escrow_key);
+    sell::sell4lamport(client, nft_mint_key);
+    buy::buy_and_pay_lamport(client, nft_mint_key);
     list_orders();
 }
 // only once for a contract
@@ -116,6 +116,7 @@ fn main() -> Result<()> {
     let client = Client::new_with_options(url, Rc::new(payer), CommitmentConfig::processed());
     //test_sell_and_cancel(&client);
     //test_sell_and_buy(&client);
-    list_orders();
+    //list_orders();
+    test_sell(&client);
     Ok(())
 }
