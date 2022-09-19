@@ -108,8 +108,7 @@ pub fn sell4kcoin(){
 
 pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey) -> Pubkey{
     let program = client.program(Pubkey::from_str(ESCROW_MARKETPLACE).unwrap());
-    let authority = program.payer();
-    let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
+    let payer_key = program.payer();
     let escrow_account = Keypair::new();
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
         &[VAULT_PREFIX,nft_mint_key.as_ref()],
@@ -127,7 +126,7 @@ pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey) -> Pubkey{
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
     );
 
-    let seller_token_account = get_associated_token_address(&payer.pubkey(),&nft_mint_key);
+    let seller_token_account = get_associated_token_address(&payer_key,&nft_mint_key);
     println!("escrow_account key {},seller_token_account {},vault_authority_pda {}", escrow_account.pubkey().to_string(),seller_token_account.to_string(),vault_authority_pda.to_string());
     println!("nft mint key {},vault_account_pda {}", nft_mint_key.to_string(),vault_account_pda);
 
@@ -135,7 +134,7 @@ pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey) -> Pubkey{
     let sell_res = program
         .request()
         .accounts(market_accounts::Sell{
-            seller: payer.pubkey(),
+            seller: payer_key,
             nft_mint: nft_mint_key,
             vault_account: vault_account_pda,
             seller_token_account: seller_token_account,
@@ -146,10 +145,10 @@ pub fn sell4lamport(client: &Client, nft_mint_key: Pubkey) -> Pubkey{
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
         })
         .args(market_instructions::Sell{_vault_authority_key:vault_authority_pda,receive_coin: None,price:1_000_000_000})//todo: test pay kcoin
-        .signer(&payer)
         .signer(&escrow_account)
         .send().unwrap();
-    println!("sell_res {}",sell_res.to_string());
+
     println!("nft mint key {},vault_account_pda {}", nft_mint_key.to_string(),vault_account_pda);
+    println!("finished sell lamport, call res {}",sell_res.to_string());
     escrow_account.pubkey()
 }

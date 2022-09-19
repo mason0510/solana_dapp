@@ -72,8 +72,8 @@ use crate::{ESCROW_MARKETPLACE, SPL_PROGRAM_ID};
 pub fn cancel(client: &Client, nft_mint_key: Pubkey,escrow_account_key: Pubkey){
     let program = client.program(Pubkey::from_str(ESCROW_MARKETPLACE).unwrap());
     let authority = program.payer();
-    let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
-
+    //let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
+    let payer_key = program.payer();
     let (vault_account_pda, _vault_account_bump) =   Pubkey::find_program_address(
         &[VAULT_PREFIX,nft_mint_key.as_ref()],
         &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
@@ -84,14 +84,12 @@ pub fn cancel(client: &Client, nft_mint_key: Pubkey,escrow_account_key: Pubkey){
           &Pubkey::from_str(ESCROW_MARKETPLACE).unwrap()
       );
 
-    let seller_token_account = get_token_account_by_wallet(payer.pubkey(),nft_mint_key).unwrap();
-    println!("nft mint key {},vault_account_pda {}", nft_mint_key.to_string(),vault_account_pda);
+    let seller_token_account = get_associated_token_address(&payer_key,&nft_mint_key);
 
-
-    let sell_res = program
+    let cancel_res = program
         .request()
         .accounts(market_accounts::Cancel{
-            seller: payer.pubkey(),
+            seller: payer_key,
             seller_token_account: seller_token_account,
             vault_account: vault_account_pda,
             vault_authority: vault_authority_pda,
@@ -99,9 +97,6 @@ pub fn cancel(client: &Client, nft_mint_key: Pubkey,escrow_account_key: Pubkey){
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
         })
         .args(market_instructions::Cancel)
-        .signer(&payer)
         .send().unwrap();
-    println!("sell_res {}",sell_res.to_string());
-    println!("nft mint key {},vault_account_pda {}", nft_mint_key.to_string(),vault_account_pda);
-
+    println!("finished cancel order {}, call res {}",escrow_account_key.to_string(),cancel_res.to_string());
 }

@@ -149,6 +149,7 @@ fn main() -> Result<()> {
 
     // Client.
     let client = Client::new_with_options(url, Rc::new(payer), CommitmentConfig::processed());
+    test_sell_and_cancel(&client);
     test_sell_and_buy(&client);
     Ok(())
 }

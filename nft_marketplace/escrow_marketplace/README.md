@@ -12,9 +12,9 @@ proxychains4 anchor test --skip-build --skip-deploy
 ```
 
 ## todo
-- 1、support multi coin
-- 2、support sol pay
+- [X] 1、support multi coin
+- [X] 2、support sol pay
 - 3、more error code
 - 4、fix typescript testcase
-- 5、add global config state
+- [X] 5、add global config state
 

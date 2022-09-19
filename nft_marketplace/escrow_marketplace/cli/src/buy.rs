@@ -93,8 +93,6 @@ pub fn buy_and_pay_lamport(client: &Client, nft_mint_key: Pubkey,escrow_account_
     let buyer_coin_account = get_associated_token_address(&buyer.pubkey(), &Pubkey::from_str(K_COIN).unwrap());
     let buyer_token_account = get_associated_token_address(&buyer.pubkey(), &nft_mint_key);
 
-    println!("nft mint key {},vault_account_pda {},vault_authority_pda {}", nft_mint_key.to_string(),vault_account_pda,vault_authority_pda);
-
     let buyer_res = program
         .request()
         .accounts(market_accounts::PayLamport{

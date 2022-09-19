@@ -75,7 +75,8 @@ pub fn simple_mint(client: &Client) -> Result<Pubkey> {
     let program = client.program(Pubkey::from_str(NFT_MINT_CONTRACT).unwrap()); //9HiRJw3dYo2MV9B1WrqFfoNjWRPS19mjVDCPqAxuMPfb
     //todo: payer不用再获取，最后也会默认签名
     let to_wallet = program.payer();
-    let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json")).expect("Example requires a keypair file");
+    let payer_key = program.payer();
+
     let nft_mint_key = Keypair::new();
     println!("nft mint key {}", nft_mint_key.pubkey().to_string());
 
@@ -92,7 +93,7 @@ pub fn simple_mint(client: &Client) -> Result<Pubkey> {
         .accounts(nft_accounts::AccountInit{
             mint: nft_mint_key.pubkey(),
             token_account: nft_token_account,
-            mint_authority: payer.pubkey(),
+            mint_authority: payer_key,
             rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
             system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
@@ -108,7 +109,7 @@ pub fn simple_mint(client: &Client) -> Result<Pubkey> {
             master_edition: edition_address, //
             mint: nft_mint_key.pubkey(), //
             token_account: nft_token_account, //
-            mint_authority: payer.pubkey(), //
+            mint_authority: payer_key, //
             rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(), //
             system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(), //
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(), //
@@ -125,9 +126,9 @@ pub fn simple_mint(client: &Client) -> Result<Pubkey> {
         .request()
         .accounts(nft_accounts::SetAndVerifyCollection{
             metadata_account: find_metadata_pda(&nft_mint_key.pubkey()),
-            collection_authority: payer.pubkey(),
-            payer: payer.pubkey(),
-            update_authority: payer.pubkey(),
+            collection_authority: payer_key,
+            payer: payer_key,
+            update_authority: payer_key,
             collection_mint: Pubkey::from_str(MEM_COLLECTION_MINT).unwrap(),
             collection_metadata: find_metadata_pda(&Pubkey::from_str(MEM_COLLECTION_MINT).unwrap()),
             collection_master_edition: find_master_edition_pda(&Pubkey::from_str(MEM_COLLECTION_MINT).unwrap()),
@@ -148,7 +149,7 @@ pub fn simple_mint(client: &Client) -> Result<Pubkey> {
 
 
 
-    let call_res = program
+    let mint_res = program
         .request()
         .instruction(
             account_init_build.instructions()?.first().unwrap().to_owned()
@@ -160,9 +161,8 @@ pub fn simple_mint(client: &Client) -> Result<Pubkey> {
             verify_build.instructions()?.first().unwrap().to_owned()
         )
         .signer(&nft_mint_key)
-        .signer(&payer)
         .send()?;
-    println!("call res {}", call_res);
+    println!("call res {}", mint_res);
     println!("nft mint key {}", nft_mint_key.pubkey().to_string());
 
     let transfer_instruction = spl_token::instruction::transfer(
