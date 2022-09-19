@@ -1,9 +1,3 @@
-pub mod nft;
-pub mod settings;
-pub mod sell;
-pub mod cancel;
-pub mod buy;
-pub mod utils;
 extern crate core;
 
 use std::cmp::min;
@@ -70,85 +64,91 @@ use solana_sdk::account::ReadableAccount;
 use escrow_marketplace::constants::{MARKET_SETTING, ORDER_SIZE, SETTING_SIZE, VAULT_PREFIX, VAULT_SIGNER};
 
 use escrow_marketplace::state::order::{SellOrder, Settings};
-use crate::sell::list_orders;
+use crate::SPL_PROGRAM_ID;
 
-#[derive(Parser, Debug)]
-pub struct Opts {
-    #[clap(long)]
-    pub token_address: Pubkey,
-    #[clap(long)]
-    pub bridge_contract_pid: Pubkey,
-    #[clap(long)]
-    pub receiver_wallet: Pubkey,
-}
-//K coin
-const K_COIN: &'static str = "5d1i4wKHhGXXkdZB22iKD1SqU6pkBeTCwFEMqo7xy39h";
 
-const SPL_PROGRAM_ID: &'static str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
-//市场托管合约
-const ESCROW_MARKETPLACE: &'static str = "D8yTyPU9tSvJc8EuaUqRcvYsAj6SuPoYFg1uZG6istQB";
-//一键生成NFT的合约
-const NFT_MINT_CONTRACT: &'static str = "9HiRJw3dYo2MV9B1WrqFfoNjWRPS19mjVDCPqAxuMPfb";
-const SENDER: &'static str = "9hUYW9s2c98GfjZb6JvW62BYEt3ryxGmeMBkhgSqmZtW";
-const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID: &'static str = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
-const SYSTEM_PROGRAM_ID: &'static str = "11111111111111111111111111111111";
-const SYSTEM_RENT_ID: &'static str = "SysvarRent111111111111111111111111111111111";
-const MPL_TOKEN_METADATA_ACCOUNT: &'static str = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
-const MEM_COLLECTION_MINT: &'static str = "8zKSXBACKpaKvgDCYdDwpJGTVDSBCtAgucJpmR7gAyx5";
+pub fn find_metadata_pda(mint: &Pubkey) -> Pubkey {
+    let (pda, _bump) = find_metadata_account(mint);
 
-// This example assumes a local validator is running with the programs
-// deployed at the addresses given by the CLI args.
-
-fn test_sell(client: &Client){
-    let nft_mint_key = nft::simple_mint(client).unwrap();
-    list_orders();
-    sell::sell4lamport(client, nft_mint_key);
-    list_orders();
-}
-fn test_sell_and_cancel(client: &Client){
-    let nft_mint_key = nft::simple_mint(client).unwrap();
-    let escrow_key = sell::sell4lamport(client, nft_mint_key);
-    list_orders();
-    cancel::cancel(client,nft_mint_key,escrow_key);
-    list_orders();
-}
-fn test_sell_and_buy(client: &Client){
-    let nft_mint_key = nft::simple_mint(client).unwrap();
-    list_orders();
-    let escrow_key = sell::sell4lamport(client, nft_mint_key);
-    buy::buy_and_pay_lamport(client,nft_mint_key,escrow_key);
-    list_orders();
-}
-// only once for a contract
-fn test_init_setting(client: &Client){
-    todo!()
+    pda
 }
 
-// only once for a contract
-fn test_update_settings(client: &Client){
-    todo!()
+pub fn find_master_edition_pda(mint: &Pubkey) -> Pubkey {
+
+    let (pda, _bump) = find_master_edition_account(mint);
+    pda
 }
 
-//some assert
-fn test_not_support_sell(){
-    todo!()
-}
-
-fn main() -> Result<()> {
-    println!("Starting test...");
-    //replace with fix code
-    let _opts = Opts::parse();
-
-    // Wallet and cluster params.
-    let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json"))
-        .expect("Example requires a keypair file");
-    let url = Cluster::Custom(
+pub fn get_acc(address: Pubkey) -> solana_sdk::account::Account{
+    let rpc_client = RpcClient::new(
         "https://api.devnet.solana.com".to_string(),
-        "wss://api.devnet.solana.com/".to_string(),
     );
+    rpc_client
+        .get_account_with_commitment(&address, CommitmentConfig::processed()).unwrap()
+        .value
+        .ok_or(ClientError::AccountNotFound).unwrap()
+}
 
-    // Client.
-    let client = Client::new_with_options(url, Rc::new(payer), CommitmentConfig::processed());
-    test_sell_and_buy(&client);
-    Ok(())
+//根据get_program_account过滤相关ata
+pub fn get_token_account_by_wallet(wallet_pubkey: Pubkey,mint_pubkey: Pubkey) -> Option<Pubkey>{
+    let rpc_url = String::from("https://api.devnet.solana.com");
+    let connection = RpcClient::new_with_commitment(rpc_url, CommitmentConfig::confirmed());
+
+    let filters = Some(vec![
+        RpcFilterType::Memcmp(Memcmp {
+            offset: 32,
+            bytes: MemcmpEncodedBytes::Base58(wallet_pubkey.to_string()),
+            encoding: Some(MemcmpEncoding::Binary),
+        }),
+        RpcFilterType::DataSize(165),
+    ]);
+
+    let accounts = connection.get_program_accounts_with_config(
+        &Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+        RpcProgramAccountsConfig {
+            filters,
+            account_config: RpcAccountInfoConfig {
+                encoding: Some(UiAccountEncoding::Base64),
+                commitment: Some(connection.commitment()),
+                ..RpcAccountInfoConfig::default()
+            },
+            ..RpcProgramAccountsConfig::default()
+        },
+    ).unwrap();
+
+    println!("Found {:?} token account(s) for wallet {}: ", accounts.len(),wallet_pubkey.to_string());
+    let token_account = accounts.iter().find(|&account| {
+        let mint_token_account = Account::unpack_from_slice(account.1.data.as_slice()).unwrap();
+        let mint_token_account = mint_token_account.mint.to_string();
+        mint_pubkey.to_string() == mint_token_account
+    });
+    //todo: 不仅检查是否在当前program找到，还要检查所有的
+    token_account.map(|token_account| token_account.0.to_owned())
+}
+
+fn spl_transfer(){
+    todo!()
+    /* let transfer_instruction = spl_token::instruction::transfer(
+        &Pubkey::from_str(SPL_PROGRAM_ID).unwrap(), &receiver_token_account,
+        &nft_token_account, &wallet3.pubkey(), &[&wallet3.pubkey()], 1).unwrap();
+    let transfer_res = program
+        .request()
+        .instruction(
+            transfer_instruction
+        )
+        .signer(&wallet3)
+        .send().unwrap();*/
+}
+
+//update nft medata
+fn update_metadata(){
+    todo!()
+}
+
+fn get_lamport_balance(){
+    todo!()
+}
+
+fn get_spl_token_balance(){
+    todo!()
 }

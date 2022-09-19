@@ -101,31 +101,22 @@ const MEM_COLLECTION_MINT: &'static str = "8zKSXBACKpaKvgDCYdDwpJGTVDSBCtAgucJpm
 
 fn test_sell(client: &Client){
     let nft_mint_key = nft::simple_mint(client).unwrap();
-    list_orders();
     sell::sell4lamport(client, nft_mint_key);
     list_orders();
 }
-fn test_sell_and_cancel(client: &Client){
-    let nft_mint_key = nft::simple_mint(client).unwrap();
-    let escrow_key = sell::sell4lamport(client, nft_mint_key);
-    list_orders();
-    cancel::cancel(client,nft_mint_key,escrow_key);
-    list_orders();
+fn test_sell_and_cancel(){
+    todo!()
 }
-fn test_sell_and_buy(client: &Client){
-    let nft_mint_key = nft::simple_mint(client).unwrap();
-    list_orders();
-    let escrow_key = sell::sell4lamport(client, nft_mint_key);
-    buy::buy_and_pay_lamport(client,nft_mint_key,escrow_key);
-    list_orders();
+fn test_sell_and_buy(){
+    todo!()
 }
 // only once for a contract
-fn test_init_setting(client: &Client){
+fn test_init_setting(){
     todo!()
 }
 
 // only once for a contract
-fn test_update_settings(client: &Client){
+fn test_update_settings(){
     todo!()
 }
 
@@ -149,6 +140,20 @@ fn main() -> Result<()> {
 
     // Client.
     let client = Client::new_with_options(url, Rc::new(payer), CommitmentConfig::processed());
-    test_sell_and_buy(&client);
+    test_sell(&client);
+ /*   init_settings(&client);
+    update_settings(&client);
+    list_settings();
+   let mint_key = mint_nft(&client, opts)?;
+    //let mint_key= Pubkey::from_str("Hpp4QyZXHjm3S2GGCbWcjAfPMWuEYszwo53SKM5MCeLy").unwrap();
+    //cancel(&client,Pubkey::from_str("Hpp4QyZXHjm3S2GGCbWcjAfPMWuEYszwo53SKM5MCeLy").unwrap(),Pubkey::from_str("CfAHnQ13nQP5aXYzS3kKuaLr8XwLJftFLzhjcpu1Cenp").unwrap());
+   let escrow_account1 = sell_and_receive_lamport(&client,mint_key.clone());
+/*    list_orders();
+    cancel(&client,mint_key.clone(),escrow_account1);
+    list_orders();*/
+    //let escrow_account2 = sell(&client,mint_key.clone());
+    list_orders();
+    buy_and_pay_lamport(&client,mint_key.clone(),escrow_account1);
+    list_orders();*/
     Ok(())
 }
