@@ -25,8 +25,9 @@ pub fn mint_nft(client: &Client) -> Result<Pubkey> {
     .expect("Example requires a keypair file");
 
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
-    let to_wallet = program.payer();
     let payer_key = program.payer();
+    let minter_key = program.payer();
+    //let minter_key = wallet3.pubkey();
 
     let nft_mint_key = Keypair::new();
     println!("nft mint key {}", nft_mint_key.pubkey().to_string());
@@ -34,7 +35,7 @@ pub fn mint_nft(client: &Client) -> Result<Pubkey> {
     //当前记忆碎皮的集合的meta_account,权限已经给了付鸿
     //let memorise_mint_account = "6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph";
 
-    let user_ata = get_associated_token_address(&to_wallet, &nft_mint_key.pubkey());
+    let user_ata = get_associated_token_address(&minter_key, &nft_mint_key.pubkey());
     let metadata_address = find_metadata_pda(&nft_mint_key.pubkey());
     let master_key = find_master_edition_pda(&nft_mint_key.pubkey());
 
@@ -45,7 +46,7 @@ pub fn mint_nft(client: &Client) -> Result<Pubkey> {
             metadata: metadata_address,
             user_ata,
             mint: nft_mint_key.pubkey(),
-            minter: wallet3.pubkey(),
+            minter: minter_key,
             rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
             system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
@@ -62,7 +63,7 @@ pub fn mint_nft(client: &Client) -> Result<Pubkey> {
         .request()
         .instruction(mint_build.instructions()?.first().unwrap().to_owned())
         .signer(&nft_mint_key)
-        .signer(&wallet3)
+        //.signer(&wallet3)
         .send()?;
     println!("call res {}", mint_res);
     println!("nft mint key {}", nft_mint_key.pubkey().to_string());
