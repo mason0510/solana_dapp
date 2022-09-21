@@ -2,31 +2,10 @@ pub mod coin;
 pub mod nft;
 
 use anchor_lang::prelude::*;
+use nft::mint::*;
 
-/***
-#[derive(Accounts)]
-pub struct Initialize<'info> {
-    #[account(init, payer = user, space = 8 + 8)]
-    pub puppet: Account<'info, Data>,
-    #[account(mut)]
-    pub user: Signer<'info>,
-    pub system_program: Program<'info, System>,
-}
 
-#[derive(Accounts)]
-pub struct SetData<'info> {
-    #[account(mut)]
-    pub puppet: Account<'info, Data>,
-}
-
-#[account]
-pub struct Data {
-    pub data: u64,
-}
-
-**/
-
-declare_id!("D8yTyPU9tSvJc8EuaUqRcvYsAj6SuPoYFg1uZG6istQB");
+declare_id!("8ZjekeVj2PHuVmaTX2Ti7vv1tZy3THJ9fZY2JJxwMaQv");
 
 #[program]
 pub mod token_middleware {
@@ -59,10 +38,13 @@ pub mod token_middleware {
         todo!()
     }
 
-    pub fn nft_mint(ctx: Context<SetData>) -> Result<()>{
-        todo!()
+    pub fn nft_mint(ctx: Context<MintNFT>, authority_key : Pubkey,
+                    name: String,
+                    uri: String,) -> Result<()>{
+        process_mint_nft(ctx,authority_key,name,uri)
     }
 }
+
 
 #[derive(Accounts)]
 pub struct SetData<'info> {

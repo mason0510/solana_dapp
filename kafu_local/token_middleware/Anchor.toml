@@ -1,5 +1,5 @@
 [programs.devnet]
-token_middleware = "D8yTyPU9tSvJc8EuaUqRcvYsAj6SuPoYFg1uZG6istQB"
+token_middleware = "8ZjekeVj2PHuVmaTX2Ti7vv1tZy3THJ9fZY2JJxwMaQv"
 
 [registry]
 url = "https://anchor.projectserum.com"
