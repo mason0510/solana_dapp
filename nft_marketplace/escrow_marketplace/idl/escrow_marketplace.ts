@@ -28,7 +28,7 @@ export type EscrowMarketplace = {
         {
           "name": "escrowAccount",
           "isMut": true,
-          "isSigner": true
+          "isSigner": false
         },
         {
           "name": "settingAccount",
@@ -440,7 +440,7 @@ export const IDL: EscrowMarketplace = {
         {
           "name": "escrowAccount",
           "isMut": true,
-          "isSigner": true
+          "isSigner": false
         },
         {
           "name": "settingAccount",

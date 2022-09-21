@@ -77,13 +77,12 @@ pub fn list_orders() {
             ) {
                 Ok(data) => {
                     let meta_data_account = find_metadata_pda(&data.mint_account);
-                    //println!("mint {},metadata {}",data.mint_account.to_string(),meta_data_account.to_string());
+                    println!("mint {},metadata {}",data.mint_account.to_string(),meta_data_account.to_string());
                     let test1 = connection.get_account(&meta_data_account).unwrap().data;
                     let meta_data = solana_sdk::borsh::try_from_slice_unchecked::<
                         mpl_token_metadata::state::Metadata,
-                    >(test1.as_slice())
-                    .unwrap();
-                    Some(meta_data)
+                    >(test1.as_slice()).ok();
+                    meta_data
                 }
                 Err(_error) => {
                     //原来还没删掉的脏数据
