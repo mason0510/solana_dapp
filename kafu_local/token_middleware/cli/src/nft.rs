@@ -146,7 +146,7 @@ pub fn mint_master_edition() -> Result<Pubkey> {
     Ok(nft_mint_key.pubkey())
 }
 
-fn transfer(){
+fn transfer_by_spl(){
     todo!()
     /*
         let receiver_token_account = get_associated_token_address(&wallet3.pubkey(), &nft_mint_key.pubkey());
@@ -257,5 +257,37 @@ pub fn add_collection(mint_key: Pubkey,collection_mint: Pubkey) -> Result<()>{
     assert_eq!(data1.collection.as_ref().unwrap().verified, true);
     assert_eq!(data1.collection.as_ref().unwrap().key, collection_mint);
 
+    Ok(())
+}
+
+pub fn transfer() -> Result<()>{
+    let to= Pubkey::from_str("677NzkzkDKT9wXDMXGPUvbFp1T7XzJtZZxcRaBAaSvNa").unwrap();
+    let mint = Pubkey::from_str("HGoRcXPNjLafM8Cc4SJRcXbd7FDNGcTXG2ShmYmLgvWh").unwrap();
+    let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
+    let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
+    let from_ata = get_associated_token_address(&program.payer(), &mint);
+    let to_ata = get_associated_token_address(&to, &mint);
+
+
+    let mint_build = program
+        .request()
+        .accounts(token_middleware_accounts::NftTransfer{
+            from_ata,
+            from: program.payer(),
+            to,
+            to_ata,
+            mint: mint,
+            token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+            associated_token_program: Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap(),
+            system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
+            rent:Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
+        })
+        .args(token_middleware_instructions::NftTransfer);
+
+    let mint_res = program
+        .request()
+        .instruction(mint_build.instructions()?.first().unwrap().to_owned())
+        .send()?;
+    println!("call res {}", mint_res);
     Ok(())
 }

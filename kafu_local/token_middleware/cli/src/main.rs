@@ -92,6 +92,7 @@ fn main() -> Result<()> {
     //mint_master_edition().unwrap();
     //coin::mint().unwrap();
     //coin::issue(Pubkey::from_str("BSMfCML1toUspfz6KyqPDJKabAoAGkjnYheXWgnkSgTV").unwrap());
-    coin::transfer().unwrap();
+    //coin::transfer().unwrap();
+    nft::transfer().unwrap();
     Ok(())
 }

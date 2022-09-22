@@ -103,18 +103,7 @@ pub fn transfer() -> Result<()>{
     let from_ata = get_associated_token_address(&program.payer(), &coin_pub_key);
     let to_ata = get_associated_token_address(&to, &coin_pub_key);
 
-    /****
-     pub from_ata: Account<'info,TokenAccount>,
-    pub from: Signer<'info>,
-    pub to: UncheckedAccount<'info>,
-    pub to_ata: Account<'info,TokenAccount>,
-    pub mint: Account<'info, Mint>,
-    pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub system_program: Program<'info,System>,
-    pub rent: Sysvar<'info, Rent>,
 
-    */
     let mint_build = program
         .request()
         .accounts(token_middleware_accounts::CoinTransfer{
