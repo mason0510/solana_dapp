@@ -91,3 +91,51 @@ pub fn issue(coin_pub_key: Pubkey) -> Result<()>{
     println!("call res {}", mint_res);
     Ok(())
 }
+
+pub fn transfer() -> Result<()>{
+    let to= Pubkey::from_str("677NzkzkDKT9wXDMXGPUvbFp1T7XzJtZZxcRaBAaSvNa").unwrap();
+    let amount = 12345678u64 * 10u64.pow(9);
+    let coin_pub_key = Pubkey::from_str("BSMfCML1toUspfz6KyqPDJKabAoAGkjnYheXWgnkSgTV").unwrap();
+
+    let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
+    //todo: 这个也封装到get_wallet里面
+    let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
+    let from_ata = get_associated_token_address(&program.payer(), &coin_pub_key);
+    let to_ata = get_associated_token_address(&to, &coin_pub_key);
+
+    /****
+     pub from_ata: Account<'info,TokenAccount>,
+    pub from: Signer<'info>,
+    pub to: UncheckedAccount<'info>,
+    pub to_ata: Account<'info,TokenAccount>,
+    pub mint: Account<'info, Mint>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub system_program: Program<'info,System>,
+    pub rent: Sysvar<'info, Rent>,
+
+    */
+    let mint_build = program
+        .request()
+        .accounts(token_middleware_accounts::CoinTransfer{
+            from_ata,
+            from: program.payer(),
+            to,
+            to_ata,
+            coin: coin_pub_key,
+            token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+            associated_token_program: Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap(),
+            system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
+            rent:Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
+        })
+        .args(token_middleware_instructions::CoinTransfer{
+            amount
+        });
+
+    let mint_res = program
+        .request()
+        .instruction(mint_build.instructions()?.first().unwrap().to_owned())
+        .send()?;
+    println!("call res {}", mint_res);
+    Ok(())
+}

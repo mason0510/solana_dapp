@@ -91,6 +91,7 @@ fn main() -> Result<()> {
     //test_add_collection()?;
     //mint_master_edition().unwrap();
     //coin::mint().unwrap();
-    coin::issue(Pubkey::from_str("BSMfCML1toUspfz6KyqPDJKabAoAGkjnYheXWgnkSgTV").unwrap());
+    //coin::issue(Pubkey::from_str("BSMfCML1toUspfz6KyqPDJKabAoAGkjnYheXWgnkSgTV").unwrap());
+    coin::transfer().unwrap();
     Ok(())
 }

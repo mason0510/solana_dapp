@@ -9,6 +9,7 @@ use nft::add_collection::*;
 use mpl_token_metadata::state::Collection;
 use coin::mint::*;
 use coin::issue::*;
+use coin::transfer::*;
 
 declare_id!("8ZjekeVj2PHuVmaTX2Ti7vv1tZy3THJ9fZY2JJxwMaQv");
 
@@ -18,8 +19,8 @@ pub mod token_middleware {
     use super::*;
 
     //coin interface for user
-    pub fn coin_transfer(ctx: Context<SetData>) -> Result<()>{
-        todo!()
+    pub fn coin_transfer(ctx: Context<CoinTransfer>,amount: u64) -> Result<()>{
+        process_transfer_coin(ctx,amount)
     }
 
     //coin interface for manager

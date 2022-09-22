@@ -4,3 +4,4 @@ pub mod mint;
 pub mod rename;
 pub mod add_collection;
 pub mod mint_master_edition;
+pub mod transfer;
