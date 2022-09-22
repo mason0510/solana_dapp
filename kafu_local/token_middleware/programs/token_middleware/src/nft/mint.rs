@@ -19,7 +19,7 @@ use {
     },
 };
 pub fn process_mint_nft(
-    ctx: Context<MintNFT>,
+    ctx: Context<NftMint>,
     authority_key : Pubkey,
     metadata_title: String,
     metadata_uri: String,
@@ -88,8 +88,8 @@ pub fn process_mint_nft(
     msg!("Creating metadata account...");
     msg!("Metadata account address: {}", &ctx.accounts.metadata.to_account_info().key());
     let creator = Creator{
-        address: authority_key,
-        verified: true,
+        address: ctx.accounts.authority.key(),
+        verified: false,
         share: 100
     };
     invoke(
@@ -99,7 +99,7 @@ pub fn process_mint_nft(
             ctx.accounts.mint.key(),
             ctx.accounts.minter.key(),
             ctx.accounts.minter.key(),
-            authority_key,
+            ctx.accounts.authority.key(),
             metadata_title,
             "".to_string(),
              metadata_uri,
@@ -114,31 +114,48 @@ pub fn process_mint_nft(
             ctx.accounts.metadata.to_account_info(),
             ctx.accounts.mint.to_account_info(),
             ctx.accounts.minter.to_account_info(),
-            //ctx.accounts.rent.to_account_info(),
+            ctx.accounts.authority.to_account_info(),
         ],
     )?;
     msg!("update close authority key");
     //变更ata的close权限
-    /*invoke(
+    invoke(
         &spl_token::instruction::set_authority(
             &ctx.accounts.token_program.key,
-            &ctx.accounts.minter.key(),
-            Some(&authority_key),
+            &ctx.accounts.user_ata.key(),
+            Some(&ctx.accounts.authority.key()),
             AuthorityType::CloseAccount,
             &ctx.accounts.minter.key(),
             &[&ctx.accounts.minter.key()])?,
         &[
             ctx.accounts.minter.to_account_info(),
-        ])?;*/
+            ctx.accounts.user_ata.to_account_info(),
+        ])?;
+
+    invoke(
+        &spl_token::instruction::set_authority(
+            &ctx.accounts.token_program.key,
+            &ctx.accounts.mint.key(),
+            Some(&ctx.accounts.authority.key()),
+            AuthorityType::FreezeAccount,
+            &ctx.accounts.minter.key(),
+            &[&ctx.accounts.minter.key()])?,
+        &[
+            ctx.accounts.minter.to_account_info(),
+            ctx.accounts.mint.to_account_info(),
+        ])?;
 
     msg!("Token mint process completed successfully.");
 
     Ok(())
 }
 
+//当前mint key和ata不能在anchor里面同时创建，待进一步调查，先按照原来逻辑
 #[derive(Accounts)]
-#[instruction(authority_key: Pubkey)]
-pub struct MintNFT<'info> {
+//#[instruction(authority_key: Pubkey)]
+pub struct NftMint<'info> {
+    /// CHECK: We're about to create this with Metaplex
+    pub authority: UncheckedAccount<'info>,
     /// CHECK: We're about to create this with Metaplex
     #[account(mut)]
     pub metadata: UncheckedAccount<'info>,

@@ -30,7 +30,6 @@ use {
     serde::{Deserialize, Serialize},
     serde_with::{As, DisplayFromStr},
 };
-use crate::nft::mint_nft;
 //import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, createInitializeMintInstruction, MINT_SIZE } from '@solana/spl-token' // IGNORE THESE ERRORS IF ANY
 
 #[derive(Parser, Debug)]
@@ -62,7 +61,11 @@ const TOKEN_MIDDLEWARE: &'static str = "8ZjekeVj2PHuVmaTX2Ti7vv1tZy3THJ9fZY2JJxw
 
 //some assert
 fn test_mint_nft(client: &Client) -> Result<Pubkey>{
-    mint_nft(client)
+    nft::mint(client)
+}
+fn test_freeze(client: &Client,mint_key: Pubkey)-> Result<()>{
+    //nft::freeze(client,Pubkey::from_str("AYU9HGf37Ji5cTwvH8bJXEFfu5uDMm7dhQ5s1fLcBSmq").unwrap())
+    nft::freeze(client,mint_key)
 }
 
 fn main() -> Result<()> {
@@ -71,8 +74,12 @@ fn main() -> Result<()> {
     let _opts = Opts::parse();
 
     // Wallet and cluster params.
+    //    let wallet3 = read_keypair_file(&*shellexpand::tilde(
+    //         "/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json",
+    //     ))
     let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json"))
         .expect("Example requires a keypair file");
+    //let payer = read_keypair_file(&*shellexpand::tilde("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json")).unwrap();
     let url = Cluster::Custom(
         "https://api.devnet.solana.com".to_string(),
         "wss://api.devnet.solana.com/".to_string(),
@@ -86,6 +93,7 @@ fn main() -> Result<()> {
     //test_sell(&client);
     let mint_key = Pubkey::from_str("BrrRtYALnoxsqQARmJ2ThnQr7o1nrsZiNNhfNMHkbspC").unwrap();
     println!("{}",mint_key.to_string());
-    let _mint_key = test_mint_nft(&client);
+    let mint_key = test_mint_nft(&client).unwrap();
+    test_freeze(&client,mint_key).unwrap();
     Ok(())
 }
