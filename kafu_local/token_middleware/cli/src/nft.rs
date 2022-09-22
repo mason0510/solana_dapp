@@ -11,6 +11,7 @@ use anchor_client::anchor_lang::Key;
 use anchor_client::anchor_lang::prelude::Pubkey;
 use anchor_client::anchor_lang::solana_program::program_pack::Pack;
 use borsh::BorshDeserialize;
+use mpl_token_metadata::state::Collection;
 use solana_client::nonce_utils::get_account;
 use solana_sdk::account::ReadableAccount;
 use solana_sdk::commitment_config::CommitmentConfig;
@@ -112,14 +113,31 @@ pub fn mint_master_edition() -> Result<Pubkey> {
             associated_token_program: Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap(),
         })
         .args(token_middleware_instructions::NftMintMasterEdition{
-            authority_key: program.payer(),
+           collection: None,
             name: now,
             uri: "https://bafybeiagelxwxuundel3rjqydvunf24llrg4e2a5l4fje27arsdzhdgaqu.ipfs.nftstorage.link/0.json".to_string(),
         });
 
+    //fixme: 目前不能直接设置collection信息
+    let collection_mint_key = Pubkey::from_str("2TDavXVuoknovjmVTyiUPaBdQGnTB7q4sJZK1yN7AGd5").unwrap();
+    let add_collection_build = program
+        .request()
+        .accounts(token_middleware_accounts::NftAddCollection{
+            authority: program.payer(),
+            metadata: metadata_address,
+            collection_mint: collection_mint_key,
+            collection_metadata: find_metadata_pda(&collection_mint_key),
+            collection_master_edition: find_master_edition_pda(&collection_mint_key),
+            system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
+            mpl_token_metadata: Pubkey::from_str(MPL_TOKEN_METADATA_ACCOUNT).unwrap(),
+            token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+        })
+        .args(token_middleware_instructions::NftAddCollection);
+
     let mint_res = program
         .request()
         .instruction(mint_build.instructions()?.first().unwrap().to_owned())
+        .instruction(add_collection_build.instructions()?.first().unwrap().to_owned())
         .signer(&nft_mint_key)
         .send()?;
     println!("call res {}", mint_res);

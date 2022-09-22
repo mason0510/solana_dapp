@@ -88,7 +88,7 @@ fn main() -> Result<()> {
     println!("Starting test...");
     //replace with fix code
     let _opts = Opts::parse();
-    test_add_collection()?;
-    //mint_master_edition().unwrap();
+    //test_add_collection()?;
+    mint_master_edition().unwrap();
     Ok(())
 }

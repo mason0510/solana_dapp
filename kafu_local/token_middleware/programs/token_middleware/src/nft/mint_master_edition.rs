@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program_option::COption;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{Token, TokenAccount,Mint};
-use mpl_token_metadata::state::Creator;
+use mpl_token_metadata::state::{Collection, Creator};
 use spl_token::instruction::AuthorityType;
 use {
     anchor_lang::{
@@ -20,7 +20,7 @@ use {
 };
 pub fn process_mint_nft_master_edition(
     ctx: Context<NftMintMasterEdition>,
-    authority_key : Pubkey,
+    collection: Option<Collection>,
     metadata_title: String,
     metadata_uri: String,
 ) -> Result<()> {
@@ -107,7 +107,7 @@ pub fn process_mint_nft_master_edition(
             0,
             true,
             false,
-            None,
+            collection,
             None,
         ),
         &[

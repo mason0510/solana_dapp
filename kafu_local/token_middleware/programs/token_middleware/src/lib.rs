@@ -6,7 +6,7 @@ use nft::mint::*;
 use nft::mint_master_edition::*;
 use nft::freeze::*;
 use nft::add_collection::*;
-
+use mpl_token_metadata::state::Collection;
 
 declare_id!("8ZjekeVj2PHuVmaTX2Ti7vv1tZy3THJ9fZY2JJxwMaQv");
 
@@ -42,10 +42,10 @@ pub mod token_middleware {
         process_mint_nft(ctx,authority_key,name,uri)
     }
 
-    pub fn nft_mint_master_edition(ctx: Context<NftMintMasterEdition>, authority_key : Pubkey,
+    pub fn nft_mint_master_edition(ctx: Context<NftMintMasterEdition>, collection: Option<Collection> ,
                     name: String,
                     uri: String,) -> Result<()>{
-        process_mint_nft_master_edition(ctx,authority_key,name,uri)
+        process_mint_nft_master_edition(ctx,collection,name,uri)
     }
 
     //nft interface for manager
