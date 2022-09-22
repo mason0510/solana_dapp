@@ -89,6 +89,8 @@ fn main() -> Result<()> {
     //replace with fix code
     let _opts = Opts::parse();
     //test_add_collection()?;
-    mint_master_edition().unwrap();
+    //mint_master_edition().unwrap();
+    //coin::mint().unwrap();
+    coin::issue(Pubkey::from_str("BSMfCML1toUspfz6KyqPDJKabAoAGkjnYheXWgnkSgTV").unwrap());
     Ok(())
 }

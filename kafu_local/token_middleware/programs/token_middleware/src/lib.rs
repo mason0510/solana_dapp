@@ -7,6 +7,8 @@ use nft::mint_master_edition::*;
 use nft::freeze::*;
 use nft::add_collection::*;
 use mpl_token_metadata::state::Collection;
+use coin::mint::*;
+use coin::issue::*;
 
 declare_id!("8ZjekeVj2PHuVmaTX2Ti7vv1tZy3THJ9fZY2JJxwMaQv");
 
@@ -16,14 +18,16 @@ pub mod token_middleware {
     use super::*;
 
     //coin interface for user
-    pub fn coin_mint(ctx: Context<SetData>) -> Result<()>{ todo!() }
     pub fn coin_transfer(ctx: Context<SetData>) -> Result<()>{
         todo!()
     }
 
     //coin interface for manager
-    pub fn coin_issue(ctx: Context<SetData>) -> Result<()>{
-        todo!()
+    pub fn coin_mint(ctx: Context<CoinMint>,name: String,symbol: String,uri:String,init_supply:u64) -> Result<()>{
+        process_mint_coin(ctx,name,symbol,uri,init_supply)
+    }
+    pub fn coin_issue(ctx: Context<CoinIssue>,amount:u64) -> Result<()>{
+        process_issue_coin(ctx,amount)
     }
     pub fn coin_freeze(ctx: Context<SetData>) -> Result<()>{
         todo!()
