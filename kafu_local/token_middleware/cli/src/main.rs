@@ -30,6 +30,7 @@ use {
     serde::{Deserialize, Serialize},
     serde_with::{As, DisplayFromStr},
 };
+use crate::nft::mint_master_edition;
 //import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, createInitializeMintInstruction, MINT_SIZE } from '@solana/spl-token' // IGNORE THESE ERRORS IF ANY
 
 #[derive(Parser, Debug)]
@@ -68,32 +69,26 @@ fn test_freeze(client: &Client,mint_key: Pubkey)-> Result<()>{
     nft::freeze(client,mint_key)
 }
 
-fn main() -> Result<()> {
-    println!("Starting test...");
-    //replace with fix code
-    let _opts = Opts::parse();
-
-    // Wallet and cluster params.
-    //    let wallet3 = read_keypair_file(&*shellexpand::tilde(
-    //         "/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json",
-    //     ))
-    let payer = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json"))
+fn test_add_collection() -> Result<()>{
+    let client = get_wallet("~/.config/solana/id.json".to_string());
+    let mint_key = nft::mint(&client).unwrap();
+    nft::add_collection(mint_key,Pubkey::from_str("2TDavXVuoknovjmVTyiUPaBdQGnTB7q4sJZK1yN7AGd5").unwrap())
+}
+pub fn get_wallet(keypair_path: String) -> Client{
+    let payer = read_keypair_file(&*shellexpand::tilde(&keypair_path))
         .expect("Example requires a keypair file");
     //let payer = read_keypair_file(&*shellexpand::tilde("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json")).unwrap();
     let url = Cluster::Custom(
         "https://api.devnet.solana.com".to_string(),
         "wss://api.devnet.solana.com/".to_string(),
     );
-
-    // Client.
-    let client = Client::new_with_options(url, Rc::new(payer), CommitmentConfig::processed());
-    //test_sell_and_cancel(&client);
-    //test_sell_and_buy(&client);
-    //list_orders();
-    //test_sell(&client);
-    let mint_key = Pubkey::from_str("BrrRtYALnoxsqQARmJ2ThnQr7o1nrsZiNNhfNMHkbspC").unwrap();
-    println!("{}",mint_key.to_string());
-    let mint_key = test_mint_nft(&client).unwrap();
-    test_freeze(&client,mint_key).unwrap();
+    Client::new_with_options(url, Rc::new(payer), CommitmentConfig::processed())
+}
+fn main() -> Result<()> {
+    println!("Starting test...");
+    //replace with fix code
+    let _opts = Opts::parse();
+    test_add_collection()?;
+    //mint_master_edition().unwrap();
     Ok(())
 }

@@ -1,5 +1,6 @@
 extern crate core;
 
+use std::fs::Metadata;
 use std::rc::Rc;
 use anchor_client::solana_sdk::signature::read_keypair_file;
 use anchor_client::solana_sdk::signature::{Keypair, Signer};
@@ -9,7 +10,9 @@ use std::str::FromStr;
 use anchor_client::anchor_lang::Key;
 use anchor_client::anchor_lang::prelude::Pubkey;
 use anchor_client::anchor_lang::solana_program::program_pack::Pack;
+use borsh::BorshDeserialize;
 use solana_client::nonce_utils::get_account;
+use solana_sdk::account::ReadableAccount;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::timing::timestamp;
 use spl_associated_token_account::get_associated_token_address;
@@ -80,6 +83,51 @@ pub fn mint(client: &Client) -> Result<Pubkey> {
     Ok(nft_mint_key.pubkey())
 }
 
+
+
+
+pub fn mint_master_edition() -> Result<Pubkey> {
+    let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
+    let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
+    let nft_mint_key = Keypair::new();
+    println!("nft mint key {}", nft_mint_key.pubkey().to_string());
+
+    let user_ata = get_associated_token_address(&program.payer(), &nft_mint_key.pubkey());
+    let metadata_address = find_metadata_pda(&nft_mint_key.pubkey());
+
+    let now = format!("timestamp_{}",timestamp() % 100000 );
+    let mint_build = program
+        .request()
+        .accounts(token_middleware_accounts::NftMintMasterEdition{
+            authority: program.payer(),
+            metadata: metadata_address,
+            user_ata,
+            mint: nft_mint_key.pubkey(),
+            minter: program.payer(),
+            master_edition: find_master_edition_pda(&nft_mint_key.pubkey()),
+            rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
+            system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
+            token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+            token_metadata_program: Pubkey::from_str(MPL_TOKEN_METADATA_ACCOUNT).unwrap(),
+            associated_token_program: Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap(),
+        })
+        .args(token_middleware_instructions::NftMintMasterEdition{
+            authority_key: program.payer(),
+            name: now,
+            uri: "https://bafybeiagelxwxuundel3rjqydvunf24llrg4e2a5l4fje27arsdzhdgaqu.ipfs.nftstorage.link/0.json".to_string(),
+        });
+
+    let mint_res = program
+        .request()
+        .instruction(mint_build.instructions()?.first().unwrap().to_owned())
+        .signer(&nft_mint_key)
+        .send()?;
+    println!("call res {}", mint_res);
+    println!("nft mint key {}", nft_mint_key.pubkey().to_string());
+
+    Ok(nft_mint_key.pubkey())
+}
+
 fn transfer(){
     todo!()
     /*
@@ -141,4 +189,55 @@ pub fn freeze(client: &Client,mint_key: Pubkey) -> Result<()>{
 }
 fn thaw(){
     todo!()
+}
+
+pub fn add_collection(mint_key: Pubkey,collection_mint: Pubkey) -> Result<()>{
+    let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
+    let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
+    println!("nft mint key {}", mint_key.to_string());
+    /***
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub metadata: AccountInfo<'info>,
+    pub collection_mint: UncheckedAccount<'info>,
+    pub collection_metadata: UncheckedAccount<'info>,
+    pub collection_master_edition: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+    pub mpl_token_metadata: AccountInfo<'info>,
+    pub token_program: Program<'info, token::Token>,
+    */
+    let metadata_key = find_metadata_pda(&mint_key);
+    let mint_build = program
+        .request()
+        .accounts(token_middleware_accounts::NftAddCollection{
+            authority: program.payer(),
+            metadata: metadata_key,
+            collection_mint,
+            collection_metadata: find_metadata_pda(&collection_mint),
+            collection_master_edition: find_master_edition_pda(&collection_mint),
+            system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
+            mpl_token_metadata: Pubkey::from_str(MPL_TOKEN_METADATA_ACCOUNT).unwrap(),
+            token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+        })
+        .args(token_middleware_instructions::NftAddCollection);
+
+    let freeze_res = program
+        .request()
+        .instruction(mint_build.instructions()?.first().unwrap().to_owned())
+        .send()?;
+    println!("call res {}", freeze_res);
+    println!("nft mint key {}", mint_key.to_string());
+
+    let user_ata = program.rpc().get_account(&metadata_key).unwrap();//connget_account(user_ata.key())
+    let data1 = solana_sdk::borsh::try_from_slice_unchecked::<mpl_token_metadata::state::Metadata>(
+        &user_ata.data.as_slice(),
+    ).unwrap();
+    println!("call res {:?}", data1.data);
+    //todo
+    //assert_eq!(data1.data.creators.unwrap().first().unwrap().verified, true);
+    //assert_eq!(data1.data.creators.unwrap().first().unwrap().address, wallet3.pubkey());
+    assert_eq!(data1.collection.as_ref().unwrap().verified, true);
+    assert_eq!(data1.collection.as_ref().unwrap().key, collection_mint);
+
+    Ok(())
 }
