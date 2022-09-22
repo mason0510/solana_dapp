@@ -47,7 +47,7 @@ pub fn mint(client: &Client) -> Result<Pubkey> {
     let master_key = find_master_edition_pda(&nft_mint_key.pubkey());
 
     println!("{},{},{},{},{},{}",metadata_address,user_ata,nft_mint_key.pubkey(),wallet3.pubkey(),payer_key,master_key);
-    let now = format!("timestamp_{}",timestamp());
+    let now = format!("timestamp_{}",timestamp() % 100000 );
     let mint_build = program
         .request()
         .accounts(token_middleware_accounts::NftMint{
@@ -106,51 +106,17 @@ fn burn(){
     todo!()
 }
 pub fn freeze(client: &Client,mint_key: Pubkey) -> Result<()>{
-    let payer = read_keypair_file(&*shellexpand::tilde("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json"))
-        .expect("Example requires a keypair file");
-    //let payer = read_keypair_file(&*shellexpand::tilde("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json")).unwrap();
-    let url = Cluster::Custom(
-        "https://api.devnet.solana.com".to_string(),
-        "wss://api.devnet.solana.com/".to_string(),
-    );
 
-    // Client.
-    let w3_client = Client::new_with_options(url, Rc::new(payer), CommitmentConfig::processed());
-
-
-/*
-    let wallet3 = read_keypair_file(&*shellexpand::tilde(
-        "/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json",
-    ))
-        .expect("Example requires a keypair file");*/
-
-    let na_wallet = read_keypair_file(&*shellexpand::tilde("~/.config/solana/id.json", )).unwrap();
-
-    let program = w3_client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
-    let minter_key = na_wallet.pubkey();
-    //let minter_key = wallet3.pubkey();
+    let wallet3 = read_keypair_file(&*shellexpand::tilde("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json", )).unwrap();
+    let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
+    let minter_key = program.payer();
     println!("nft mint key {}", mint_key.to_string());
     let user_ata = get_associated_token_address(&minter_key, &mint_key);
-    /***
-#[derive(Accounts)]
-pub struct NftFreeze<'info> {
-    #[account(mut)]
-    pub authority: Signer<'info>,
-    /// CHECK: We're about to create this with Anchor
-    pub mint: UncheckedAccount<'info>,
-    /// CHECK: We're about to create this with Anchor
-    #[account(mut)]
-    pub user_ata: UncheckedAccount<'info>,
-    /// CHECK: We're about to create this with Anchor
-    pub mint_owner: UncheckedAccount<'info>,
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, token::Token>,
-}
-    */
+
     let mint_build = program
         .request()
         .accounts(token_middleware_accounts::NftFreeze{
-            authority: program.payer(),
+            authority: wallet3.pubkey(),
             mint: mint_key,
             user_ata,
             mint_owner: minter_key,
@@ -162,11 +128,10 @@ pub struct NftFreeze<'info> {
     let freeze_res = program
         .request()
         .instruction(mint_build.instructions()?.first().unwrap().to_owned())
-        //.signer(&wallet3)
+        .signer(&wallet3)
         .send()?;
     println!("call res {}", freeze_res);
     println!("nft mint key {}", mint_key.to_string());
-    //todo: 检查状态
 
     let user_ata = program.rpc().get_account(&user_ata.key()).unwrap();//connget_account(user_ata.key())
     let account = Account::unpack_unchecked(&user_ata.data).unwrap();
