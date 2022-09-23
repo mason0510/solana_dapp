@@ -11,12 +11,13 @@ use coin::mint::*;
 use coin::issue::*;
 use coin::transfer::*;
 use nft::transfer::*;
+use nft::burn::*;
+use nft::update_meta::*;
 
 declare_id!("8ZjekeVj2PHuVmaTX2Ti7vv1tZy3THJ9fZY2JJxwMaQv");
 
 #[program]
 pub mod token_middleware {
-    //use crate::nft::freeze::{Freeze, process_freeze};
     use super::*;
 
     //coin interface for user
@@ -52,6 +53,7 @@ pub mod token_middleware {
         process_mint_nft(ctx, authority_key, name, uri)
     }
 
+    //for public nft
     pub fn nft_mint_master_edition(ctx: Context<NftMintMasterEdition>, collection: Option<Collection>,
                                    name: String,
                                    uri: String, ) -> Result<()> {
@@ -59,8 +61,8 @@ pub mod token_middleware {
     }
 
     //nft interface for manager
-    pub fn nft_burn(ctx: Context<SetData>) -> Result<()> {
-        todo!()
+    pub fn nft_burn(ctx: Context<NftBurn>) -> Result<()> {
+        process_nft_burn(ctx)
     }
 
     pub fn nft_add_collection(ctx: Context<NftAddCollection>) -> Result<()> {
@@ -75,8 +77,8 @@ pub mod token_middleware {
         todo!()
     }
 
-    pub fn nft_rename(ctx: Context<SetData>) -> Result<()> {
-        todo!()
+    pub fn nft_update_meta(ctx: Context<NftUpdateMeta>,name:Option<String>,uri:Option<String>) -> Result<()> {
+        process_update_meta(ctx, name, uri)
     }
 }
 

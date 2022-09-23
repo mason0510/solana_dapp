@@ -106,7 +106,7 @@ pub fn process_mint_nft(
             Some(vec![creator]),
             0,
             false,
-            false,
+            true,
             None,
             None,
         ),

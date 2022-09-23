@@ -106,7 +106,7 @@ pub fn process_mint_nft_master_edition(
             Some(vec![creator]),
             0,
             true,
-            false,
+            true,
             collection,
             None,
         ),

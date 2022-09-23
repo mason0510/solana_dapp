@@ -168,11 +168,35 @@ fn transfer_by_spl(){
         .unwrap();*/
 }
 
-fn burn(){
-    todo!()
+pub fn burn() -> Result<()>{
+    let mint_key = Pubkey::from_str("54z1N9Ef3T2tKsVzs3sV9jwyvxLTi1aF8SXa2q55kELP").unwrap();
+    let client = crate::get_wallet("~/.config/solana/id.json".to_string());
+    let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
+    let minter_key = program.payer();
+    println!("nft mint key {}", mint_key.to_string());
+    let user_ata = get_associated_token_address(&Pubkey::from_str("677NzkzkDKT9wXDMXGPUvbFp1T7XzJtZZxcRaBAaSvNa").unwrap(), &mint_key);
+    println!("user_ata key {}", user_ata.to_string());
+
+    let mint_build = program
+        .request()
+        .accounts(token_middleware_accounts::NftBurn{
+            authority: program.payer(),
+            mint: mint_key,
+            user_ata,
+            system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
+            token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+        })
+        .args(token_middleware_instructions::NftBurn);
+
+    let freeze_res = program
+        .request()
+        .instruction(mint_build.instructions()?.first().unwrap().to_owned())
+        .send()?;
+    println!("call res {}", freeze_res);
+    println!("nft mint key {}", mint_key.to_string());
+    Ok(())
 }
 pub fn freeze(client: &Client,mint_key: Pubkey) -> Result<()>{
-
     let wallet3 = read_keypair_file(&*shellexpand::tilde("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json", )).unwrap();
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
     let minter_key = program.payer();
@@ -213,17 +237,6 @@ pub fn add_collection(mint_key: Pubkey,collection_mint: Pubkey) -> Result<()>{
     let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
     println!("nft mint key {}", mint_key.to_string());
-    /***
-    #[account(mut)]
-    pub authority: Signer<'info>,
-    pub metadata: AccountInfo<'info>,
-    pub collection_mint: UncheckedAccount<'info>,
-    pub collection_metadata: UncheckedAccount<'info>,
-    pub collection_master_edition: UncheckedAccount<'info>,
-    pub system_program: Program<'info, System>,
-    pub mpl_token_metadata: AccountInfo<'info>,
-    pub token_program: Program<'info, token::Token>,
-    */
     let metadata_key = find_metadata_pda(&mint_key);
     let mint_build = program
         .request()
@@ -261,9 +274,9 @@ pub fn add_collection(mint_key: Pubkey,collection_mint: Pubkey) -> Result<()>{
 }
 
 pub fn transfer() -> Result<()>{
-    let to= Pubkey::from_str("677NzkzkDKT9wXDMXGPUvbFp1T7XzJtZZxcRaBAaSvNa").unwrap();
+    let to= Pubkey::from_str("6iytHt6hJ9szSvNVL713JoioXPLfoPGjKKTSCUhUtH73").unwrap();
     let mint = Pubkey::from_str("HGoRcXPNjLafM8Cc4SJRcXbd7FDNGcTXG2ShmYmLgvWh").unwrap();
-    let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
+    let client = crate::get_wallet("~/.config/solana/id.json".to_string());
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
     let from_ata = get_associated_token_address(&program.payer(), &mint);
     let to_ata = get_associated_token_address(&to, &mint);
@@ -283,6 +296,30 @@ pub fn transfer() -> Result<()>{
             rent:Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
         })
         .args(token_middleware_instructions::NftTransfer);
+
+    let mint_res = program
+        .request()
+        .instruction(mint_build.instructions()?.first().unwrap().to_owned())
+        .send()?;
+    println!("call res {}", mint_res);
+    Ok(())
+}
+
+pub fn update_meta() -> Result<()>{
+    let mint = Pubkey::from_str("5s9cqZ3yPmY1ptAyzKSuv4QDen9QeunwVtCcmCCUqQDW").unwrap();
+    let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
+    let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
+    let mint_build = program
+        .request()
+        .accounts(token_middleware_accounts::NftUpdateMeta{
+            authority: program.payer(),
+            metadata: find_metadata_pda(&mint),
+            mpl_token_metadata: Pubkey::from_str(MPL_TOKEN_METADATA_ACCOUNT).unwrap(),
+        })
+        .args(token_middleware_instructions::NftUpdateMeta{
+            name: Some("".to_string()),
+            uri: Some("".to_string()),
+        });
 
     let mint_res = program
         .request()

@@ -93,6 +93,11 @@ fn main() -> Result<()> {
     //coin::mint().unwrap();
     //coin::issue(Pubkey::from_str("BSMfCML1toUspfz6KyqPDJKabAoAGkjnYheXWgnkSgTV").unwrap());
     //coin::transfer().unwrap();
-    nft::transfer().unwrap();
+    //nft::transfer().unwrap();
+    //nft::burn().unwrap();
+    //test_mint_nft(&get_wallet("~/.config/solana/id.json".to_string())).unwrap();
+
+    nft::update_meta().unwrap();
+
     Ok(())
 }
