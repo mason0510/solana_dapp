@@ -21,25 +21,25 @@ async function upload(storage,image_path,name,id){
 //非房间的需要png命名从上一批的last-id续上
 async function upload_dir(storage,project_dir,name,start,end){
     var files_data = []
-    var id = 0;
     console.log("0001")
     var image_cid = null;
     let image_files = fs.readdirSync(path.join(project_dir,"image"));
-    for (let i = start; i < end; i++) {
+    for (let id = start; id < end; id++) {
         let json_name = id+".json";
         let metadata_path = path.join(project_dir,"json",json_name);
-        //房间的都一样
-        if (name.includes("ROOM") && image_cid ){
-           console.log("image is already upload")
-        }else {
-            let image_path = path.join(project_dir,"image",image_files[i]);
+        //房间的都一样，目前都是一个每个类型的图片可以做成多个nft的,所以image只上传一次而且是0.png而不是对应的{id}.png
+        console.log("----- ",image_files[0])
+        let image_path = path.join(project_dir,"image",image_files[0]);
+        console.log("--2--- ",image_path)
+
+        if (!image_cid ){
             let image_data =  fs.readFileSync(image_path);
             image_cid = await storage.storeBlob(new Blob([image_data]))
             console.log("%s cid %s",image_path,image_cid);
         }
 
         let metadata = {
-            name: name,
+            name: name + " #" + id,
             symbol: '',
             description: '',
             image: 'https://'+image_cid+'.ipfs.nftstorage.link',
@@ -50,16 +50,29 @@ async function upload_dir(storage,project_dir,name,start,end){
         let file_data = new File([  fs.readFileSync(metadata_path)],json_name);
         console.log("--",metadata_path,JSON.stringify(metadata));
         files_data.push(file_data);
-        id++;
     }
     const metadata_dir_cid = await storage.storeDirectory(files_data)
-    console.log("dir cid: https://%s.ipfs.nftstorage.link",metadata_dir_cid);
+    console.log("name %s dir cid: https://%s.ipfs.nftstorage.link",name,metadata_dir_cid);
 }
 
 async function main() {
     const storage = new NFTStorage({ endpoint, token })
     //await upload(storage,"./1.png","room_0926_0001",0);
     //todo: config
-    await upload_dir(storage,"./resource/room1","LEVEL1-ROOM",0,100);
+    //room
+    for (let level = 1; level < 6; level++) {
+        await upload_dir(storage, "./resource/room/level"+level, "LEVEL"+level+"-ROOM", 0, 1000);
+    }
+
+    //avatar_frame
+    for (let i = 0; i < 15; i++) {
+        await upload_dir(storage, "./resource/avatar_frame/"+i, "frame"+i, 0, 1000);
+    }
+
+    //vehicle
+    for (let i = 0; i < 15; i++) {
+        await upload_dir(storage, "./resource/vehicle/"+i, "vehicle"+i, 0, 1000);
+    }
+
 }
 main()
