@@ -17,30 +17,38 @@ async function upload(storage,image_path,name,id){
     console.log('IPFS URL for the metadata:', metadata.url)
 }
 
-async function upload_dir(storage,project_dir,name){
+//房间的直接从start开始铸造新的一批
+//非房间的需要png命名从上一批的last-id续上
+async function upload_dir(storage,project_dir,name,start,end){
     var files_data = []
     var id = 0;
     console.log("0001")
+    var image_cid = null;
     let image_files = fs.readdirSync(path.join(project_dir,"image"));
-    for (let i = 0; i < image_files.length; i++) {
+    for (let i = start; i < end; i++) {
         let json_name = id+".json";
         let metadata_path = path.join(project_dir,"json",json_name);
-        console.log("---%s",metadata_path);
-        let image_path = path.join(project_dir,"image",image_files[i]);
-        console.log("---%s",image_path);
-        let image_data =  fs.readFileSync(image_path);
-        const cid = await storage.storeBlob(new Blob([image_data]))
-        console.log("%s cid %s",image_path,cid);
+        //房间的都一样
+        if (name.includes("ROOM") && image_cid ){
+           console.log("image is already upload")
+        }else {
+            let image_path = path.join(project_dir,"image",image_files[i]);
+            let image_data =  fs.readFileSync(image_path);
+            image_cid = await storage.storeBlob(new Blob([image_data]))
+            console.log("%s cid %s",image_path,image_cid);
+        }
+
         let metadata = {
             name: name,
             symbol: '',
             description: '',
-            image: 'https://'+cid+'.ipfs.nftstorage.link',
+            image: 'https://'+image_cid+'.ipfs.nftstorage.link',
             external_url:"",
             attributes: [{trait_type: "id",value: id}]
         };
         fs.writeFileSync(metadata_path,JSON.stringify(metadata));
-        let file_data = new File([ metadata_path],json_name);
+        let file_data = new File([  fs.readFileSync(metadata_path)],json_name);
+        console.log("--",metadata_path,JSON.stringify(metadata));
         files_data.push(file_data);
         id++;
     }
@@ -51,6 +59,7 @@ async function upload_dir(storage,project_dir,name){
 async function main() {
     const storage = new NFTStorage({ endpoint, token })
     //await upload(storage,"./1.png","room_0926_0001",0);
-    await upload_dir(storage,"./resource/car","room_0926_0001");
+    //todo: config
+    await upload_dir(storage,"./resource/room1","LEVEL1-ROOM",0,100);
 }
 main()
