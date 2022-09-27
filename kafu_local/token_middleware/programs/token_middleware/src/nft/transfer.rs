@@ -32,19 +32,24 @@ pub fn process_transfer_nft(
             authority: ctx.accounts.from.to_account_info(),
         }), 1)?;
     ctx.accounts.to_ata.reload()?;
+    token::close_account(
+        CpiContext::new(ctx.accounts.token_program.to_account_info(), token::CloseAccount {
+            account: ctx.accounts.from_ata.to_account_info(),
+            destination: ctx.accounts.from.to_account_info(),
+            authority: ctx.accounts.from.to_account_info(),
+        }),
+    );
     msg!("remaining tokens: {}", ctx.accounts.to_ata.amount);
     Ok(())
 }
 
 #[derive(Accounts)]
 pub struct NftTransfer<'info> {
-    #[account(
-    mut,
-    close = from
-    )]
-    pub from_ata: Account<'info,TokenAccount>,
     #[account(mut)]
-    pub from: Signer<'info>,
+    pub from_ata: Account<'info,TokenAccount>,
+    /// CHECK
+    #[account(mut,signer)]
+    pub from: AccountInfo<'info>,
     ///CHECK: ?
     pub to: UncheckedAccount<'info>,
     #[account(

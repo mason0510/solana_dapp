@@ -90,7 +90,7 @@ pub fn process_mint_nft(
     msg!("Metadata account address: {}", &ctx.accounts.metadata.to_account_info().key());
     let creator = Creator{
         address: ctx.accounts.authority.key(),
-        verified: false,
+        verified: true,
         share: 100
     };
     invoke(
@@ -119,8 +119,8 @@ pub fn process_mint_nft(
         ],
     )?;
     msg!("update close authority key");
-    //变更ata的close权限
-    invoke(
+    //close 权限不再收回，
+   /* invoke(
         &spl_token::instruction::set_authority(
             &ctx.accounts.token_program.key,
             &ctx.accounts.user_ata.key(),
@@ -131,7 +131,7 @@ pub fn process_mint_nft(
         &[
             ctx.accounts.minter.to_account_info(),
             ctx.accounts.user_ata.to_account_info(),
-        ])?;
+        ])?;*/
 
     invoke(
         &spl_token::instruction::set_authority(

@@ -106,7 +106,6 @@ fn main() -> Result<()> {
     let _opts = Opts::parse();
     let project_infos : Vec<ProjectInfo> = ProjectInfo::load("./upload_cids.json").unwrap();
     println!("{:#?}",project_infos);
-    //assert!(false);
     for project_info in project_infos {
         let collection_name = format!("{} collection",project_info.project);
         let collection_token = nft::mint_master_edition(&get_wallet("~/.config/solana/id.json".to_string()),
