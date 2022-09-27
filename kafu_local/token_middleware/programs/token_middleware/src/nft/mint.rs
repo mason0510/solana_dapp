@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program_option::COption;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{Token, TokenAccount,Mint};
-use mpl_token_metadata::state::Creator;
+use mpl_token_metadata::state::{Collection, Creator};
 use spl_token::instruction::AuthorityType;
 use {
     anchor_lang::{
@@ -23,6 +23,7 @@ pub fn process_mint_nft(
     authority_key : Pubkey,
     metadata_title: String,
     metadata_uri: String,
+    collection: Option<Collection>
 ) -> Result<()> {
 
     system_program::create_account(
@@ -107,7 +108,7 @@ pub fn process_mint_nft(
             0,
             false,
             true,
-            None,
+            collection,
             None,
         ),
         &[

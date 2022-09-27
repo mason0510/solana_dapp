@@ -49,8 +49,10 @@ pub mod token_middleware {
 
     pub fn nft_mint(ctx: Context<NftMint>, authority_key: Pubkey,
                     name: String,
-                    uri: String, ) -> Result<()> {
-        process_mint_nft(ctx, authority_key, name, uri)
+                    uri: String,
+                    collection: Option<Collection>
+    ) -> Result<()> {
+        process_mint_nft(ctx, authority_key, name, uri,collection)
     }
 
     //for public nft

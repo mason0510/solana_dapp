@@ -38,7 +38,10 @@ pub fn process_transfer_nft(
 
 #[derive(Accounts)]
 pub struct NftTransfer<'info> {
-    #[account(mut)]
+    #[account(
+    mut,
+    close = from
+    )]
     pub from_ata: Account<'info,TokenAccount>,
     #[account(mut)]
     pub from: Signer<'info>,

@@ -70,6 +70,7 @@ pub fn mint(client: &Client) -> Result<Pubkey> {
             authority_key: wallet3.pubkey(),
             name: now,
             uri: "https://bafybeiagelxwxuundel3rjqydvunf24llrg4e2a5l4fje27arsdzhdgaqu.ipfs.nftstorage.link/0.json".to_string(),
+            collection:None
         });
 
     let mint_res = program
