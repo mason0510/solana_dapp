@@ -6,3 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anchor-client = { version = "0.24.2", features = ["debug"] }
+shellexpand = "2.1.0"
+anyhow = "1.0.32"
+rand = "0.7.3"
+clap = { version = "3.0.0-rc.0", features = ["derive"] }
+solana-sdk = "~1.9.29"
+solana-client = "~1.9.29"
+solana-account-decoder = "~1.9.29"
+spl-token = "3.2.0"
+spl-associated-token-account = { version = "1.0.2", features = ["no-entrypoint"] }
+mpl-token-metadata = "1.3.6"
+token_middleware = { path = "../../../kafu_local/token_middleware/programs/token_middleware", features = ["no-entrypoint"] }
+nft_mint_and_verify = { path = "../../../nft_mint_and_verify/programs/nft_mint_and_verify", features = ["no-entrypoint"] }
+borsh = "0.9.1"
+serde = { version = "1.0", features = ["derive"] }
