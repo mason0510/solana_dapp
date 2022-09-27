@@ -69,11 +69,11 @@ async function main() {
     //upload_collection
     //todo: config
     //room
-    for (let level = 1; level < 6; level++) {
+    for (let level = 1; level < 2; level++) {
         let name = "LEVEL"+level+"-ROOM";
         let collection_uri = await upload_collection(storage,"./resource/room/level"+level,name + " collection")
-        let token_uri = await upload_dir(storage, "./resource/room/level"+level, name, 0, 1000);
-        upload_cids.push({project:name,collection_uri:collection_uri,token_uri:token_uri,supply:1000})
+        let token_uri = await upload_dir(storage, "./resource/room/level"+level, name, 0, 100);
+        upload_cids.push({project:name,collection_uri:collection_uri,token_uri:token_uri,supply:100})
         console.log("complete upload %s",name)
     }
 
@@ -81,8 +81,8 @@ async function main() {
     for (let i = 0; i < 15; i++) {
         let name = "frame"+i;
         let collection_uri = await upload_collection(storage,"./resource/avatar_frame/"+i,name + " collection")
-        let token_uri = await upload_dir(storage, "./resource/avatar_frame/"+i, name, 0, 1000);
-        upload_cids.push({project:name,collection_uri:collection_uri,token_uri:token_uri,supply:1000})
+        let token_uri = await upload_dir(storage, "./resource/avatar_frame/"+i, name, 0, 100);
+        upload_cids.push({project:name,collection_uri:collection_uri,token_uri:token_uri,supply:100})
         console.log("complete upload %s",name)
     }
 
@@ -90,11 +90,11 @@ async function main() {
     for (let i = 0; i < 15; i++) {
         let name = "vehicle"+i;
         let collection_uri = await upload_collection(storage,"./resource/vehicle/"+i,name + " collection")
-        let token_uri = await upload_dir(storage, "./resource/vehicle/"+i, name , 0, 1000);
-        upload_cids.push({project:name,collection_uri:collection_uri,token_uri:token_uri,supply:1000})
+        let token_uri = await upload_dir(storage, "./resource/vehicle/"+i, name , 0, 100);
+        upload_cids.push({project:name,collection_uri:collection_uri,token_uri:token_uri,supply:100})
         console.log("complete upload %s",name)
     }
-    await fs.promises.writeFile("./resource/upload_cids.json",JSON.stringify(upload_cids));
+    await fs.promises.writeFile("./resource/upload_cids.json",JSON.stringify(upload_cids,null,"\t"));
 
 }
 main()

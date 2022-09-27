@@ -1,5 +1,6 @@
 pub mod nft;
 pub mod utils;
+
 extern crate core;
 
 use std::cmp::min;
@@ -49,6 +50,7 @@ pub struct Opts {
     #[clap(long)]
     pub receiver_wallet: Pubkey,
 }
+
 //K coin
 const K_COIN: &'static str = "5d1i4wKHhGXXkdZB22iKD1SqU6pkBeTCwFEMqo7xy39h";
 
@@ -68,17 +70,16 @@ const TOKEN_MIDDLEWARE: &'static str = "8ZjekeVj2PHuVmaTX2Ti7vv1tZy3THJ9fZY2JJxw
 
 pub trait Json {
     fn load<T: for<'a> Deserialize<'a>>(path: &str) -> Result<Vec<T>> {
-
         let mut file = File::open(path).unwrap();
         let mut data = String::new();
         file.read_to_string(&mut data).unwrap();
-        let data : Vec<T> = serde_json::from_str(&data)?;
+        let data: Vec<T> = serde_json::from_str(&data)?;
         Ok(data)
     }
 
     fn sync<T: Serialize>(data: Vec<T>, path: &str) -> Result<()> {
         let json_str = serde_json::to_string(&data)?;
-        println!("json_str {}",json_str);
+        println!("json_str {}", json_str);
         let mut file = OpenOptions::new().create(true).truncate(true).open(path)?;
         //let mut file = File::open(path).unwrap();
         file.write_all(json_str.as_bytes()).expect("write failed");
@@ -86,7 +87,7 @@ pub trait Json {
     }
 }
 
-#[derive(Clone, Deserialize,Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct ProjectInfo {
     pub project: String,
     pub collection_uri: String,
@@ -94,22 +95,22 @@ pub struct ProjectInfo {
     pub supply: u64,
 }
 
-impl Json for ProjectInfo{}
-impl Json for Projects{}
+impl Json for ProjectInfo {}
+
+impl Json for Projects {}
 
 
-#[derive(Clone, Deserialize,Debug,Serialize)]
+#[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct MintInfo {
     pub mint_id: u64,
     pub mint_key: String,
 }
 
-#[derive(Clone, Deserialize,Debug,Serialize)]
+#[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct Projects {
     pub collection_mint_key: String,
     pub mints: Vec<MintInfo>,
 }
-
 
 
 /*fn test_add_collection() -> Result<()>{
@@ -117,31 +118,42 @@ pub struct Projects {
     let mint_key = nft::mint(&client).unwrap();
     nft::add_collection(mint_key,Pubkey::from_str("2TDavXVuoknovjmVTyiUPaBdQGnTB7q4sJZK1yN7AGd5").unwrap())
 }*/
-pub fn get_wallet(keypair_path: String) -> Client{
+pub fn get_wallet(keypair_path: String) -> Client {
     let payer = read_keypair_file(&*shellexpand::tilde(&keypair_path))
         .expect("Example requires a keypair file");
     //let payer = read_keypair_file(&*shellexpand::tilde("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json")).unwrap();
-    let url = Cluster::Custom(
+    /*let url = Cluster::Custom(
         "https://api.devnet.solana.com".to_string(),
         "wss://api.devnet.solana.com/".to_string(),
+    );*/
+    let url = Cluster::Custom(
+        "https://misty-shy-film.solana-devnet.discover.quiknode.pro/b15a93063a769133be864e0f63d20f01b252d85e/".to_string(),
+        "wss://misty-shy-film.solana-devnet.discover.quiknode.pro/b15a93063a769133be864e0f63d20f01b252d85e/".to_string(),
     );
-    Client::new_with_options(url, Rc::new(payer), CommitmentConfig::processed())
+    Client::new_with_options(url, Rc::new(payer), CommitmentConfig::confirmed())
 }
 
 
-async fn batch_mint(){
-    let mut project_infos : Vec<ProjectInfo> = ProjectInfo::load("./upload_cids.json").unwrap();
-    println!("{:#?}",project_infos);
-   //let project_infos = vec![project_infos.first().unwrap().to_owned()];
+async fn batch_mint() {
+    let mut project_infos: Vec<ProjectInfo> = ProjectInfo::load("./upload_cids.json").unwrap();
+    println!("{:#?}", project_infos);
+    //let project_infos = vec![project_infos.first().unwrap().to_owned()];
     let mut projects = Arc::new(RwLock::new(vec![]));
     let client = get_wallet("~/.config/solana/id.json".to_string());
     for project_info in project_infos {
-        let collection_name = format!("{} collection",project_info.project);
-        let collection_mint_key = nft::mint_master_edition(&client, project_info.collection_uri.as_str(), collection_name.as_str()).unwrap();
-        let collection = Collection{
+        let collection_name = format!("{} collection", project_info.project);
+        let collection_mint_key;
+        loop {
+            if let Ok(key) = nft::mint_master_edition(&client, project_info.collection_uri.as_str(), collection_name.as_str()){
+                collection_mint_key = key;
+                break;
+            }
+        }
+        let collection = Collection {
             verified: true,
-            key: collection_mint_key
+            key: collection_mint_key,
         };
+        println!("complete mint collection {} ,mint key {}", project_info.project,collection_mint_key.to_string());
         let projects_arc1 = projects.clone();
         //并发和cpu数量绑定
         rayon::scope(|s| {
@@ -153,31 +165,32 @@ async fn batch_mint(){
                 s.spawn(move |_| {
                     //todo: arc
                     let client = get_wallet("~/.config/solana/id.json".to_string());
-                    let token_name =  format!("{} #{}",project_info.project,id);
-                    let token_uri = format!("{}/{}.json",project_info.token_uri,id);
-                    let mint_key = nft::mint(&client,
-                                             token_uri.as_str(),
-                                             token_name.as_str(),
-                                             Some(collection.clone())
-                    ).unwrap();
-                    mint_infos.write().unwrap().push(MintInfo{
-                        mint_id: id,
-                        mint_key: mint_key.to_string()
-                    });
-                    println!("complete mint {} #{}",project_info.project,id);
-                })
+                    let token_name = format!("{} #{}", project_info.project, id);
+                    let token_uri = format!("{}/{}.json", project_info.token_uri, id);
+                    let mint_key;
+                    loop {
+                        if let Ok(key) = nft::mint(&client, token_uri.as_str(), token_name.as_str(), Some(collection.clone())) {
+                            mint_key = key;
+                            break;
+                        }
+                    }
 
+                    mint_infos.write().unwrap().push(MintInfo {
+                        mint_id: id,
+                        mint_key: mint_key.to_string(),
+                    });
+                    println!("complete mint {} #{},mint key {}", project_info.project, id,mint_key.to_string());
+                })
             }
-            projects_arc1.clone().write().unwrap().push(Projects{
+            projects_arc1.clone().write().unwrap().push(Projects {
                 collection_mint_key: collection_mint_key.to_string(),
-                mints: mint_infos.read().unwrap().deref().to_owned()
+                mints: mint_infos.read().unwrap().deref().to_owned(),
             });
         });
-
     }
-    let data : Vec<Projects> = projects.read().unwrap().deref().to_owned();
-    Projects::sync(data,"./test1.json").unwrap();
-    println!("edddyguo_0001 {:?}",projects);
+    let data: Vec<Projects> = projects.read().unwrap().deref().to_owned();
+    Projects::sync(data, "./test1.json").unwrap();
+    println!("edddyguo_0001 {:?}", projects);
 }
 
 fn main() -> Result<()> {
