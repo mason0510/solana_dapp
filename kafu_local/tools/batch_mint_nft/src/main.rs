@@ -25,7 +25,9 @@ use std::str::FromStr;
 use anchor_client::anchor_lang::prelude::Pubkey;
 use clap::ErrorKind::NoEquals;
 use mpl_token_metadata::state::Collection;
-
+use serde::{Deserialize, Serialize};
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, BufReader, Read, Write};
 #[cfg(feature = "serde-feature")]
 use {
     serde::{Deserialize, Serialize},
@@ -61,6 +63,28 @@ const MPL_TOKEN_METADATA_ACCOUNT: &'static str = "metaqbxxUerdq28cj1RbAWkYQm3ybz
 const MEM_COLLECTION_MINT: &'static str = "8zKSXBACKpaKvgDCYdDwpJGTVDSBCtAgucJpmR7gAyx5";
 const TOKEN_MIDDLEWARE: &'static str = "8ZjekeVj2PHuVmaTX2Ti7vv1tZy3THJ9fZY2JJxwMaQv";
 
+pub trait Json {
+    fn load<T: for<'a> Deserialize<'a>>(path: &str) -> Result<Vec<T>> {
+
+        let mut file = File::open(path).unwrap();
+        let mut data = String::new();
+        file.read_to_string(&mut data).unwrap();
+        let data : Vec<T> = serde_json::from_str(&data)?;
+        Ok(data)
+    }
+}
+
+#[derive(Clone, Deserialize,Debug)]
+pub struct ProjectInfo {
+    pub project: String,
+    pub collection_uri: String,
+    pub token_uri: String,
+    pub supply: u64,
+}
+
+impl Json for ProjectInfo{}
+
+
 
 
 /*fn test_add_collection() -> Result<()>{
@@ -80,20 +104,29 @@ pub fn get_wallet(keypair_path: String) -> Client{
 }
 fn main() -> Result<()> {
     let _opts = Opts::parse();
-
-    //mint room1
-    //mint_collection
-    let collection_token = nft::mint_master_edition(&get_wallet("~/.config/solana/id.json".to_string()),
-                                     "https://bafybeigteh6ruqirkf64jipbdlmzrfnhbfhaw4alnqkdcxvaxgg7l2hlxy.ipfs.nftstorage.link/collection.json",
-        "LEVEL1-ROOM collection").unwrap();
-    let collection = Collection{
-        verified: true,
-        key: collection_token
-    };
-    for id in 0..1 {
-        let name =  format!("LEVEL1-ROOM #{}",id);
-        let uri =  format!("https://bafybeicjmna5frv5e6vpsng3sbrikuxxa5saodhbmebonegqig7ybfxqpa.ipfs.nftstorage.link/{}.json",id);
-        let collection_token = nft::mint(&get_wallet("~/.config/solana/id.json".to_string()), &uri, &name,Some(collection.clone())).unwrap();
+    let project_infos : Vec<ProjectInfo> = ProjectInfo::load("./upload_cids.json").unwrap();
+    println!("{:#?}",project_infos);
+    //assert!(false);
+    for project_info in project_infos {
+        let collection_name = format!("{} collection",project_info.project);
+        let collection_token = nft::mint_master_edition(&get_wallet("~/.config/solana/id.json".to_string()),
+                                                        project_info.collection_uri.as_str(),
+                                                        collection_name.as_str()).unwrap();
+        let collection = Collection{
+            verified: true,
+            key: collection_token
+        };
+        for id in 0..project_info.supply {
+            let token_name =  format!("{} #{}",project_info.project,id);
+            let token_uri = format!("{}/{}.json",project_info.token_uri,id);
+            let client = get_wallet("~/.config/solana/id.json".to_string());
+            let collection_token = nft::mint(&client,
+                                             token_uri.as_str(),
+                                             token_name.as_str(),
+                                             Some(collection.clone())
+            ).unwrap();
+        }
     }
+
     Ok(())
 }

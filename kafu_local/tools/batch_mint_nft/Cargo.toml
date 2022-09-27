@@ -21,3 +21,4 @@ token_middleware = { path = "../../../kafu_local/token_middleware/programs/token
 nft_mint_and_verify = { path = "../../../nft_mint_and_verify/programs/nft_mint_and_verify", features = ["no-entrypoint"] }
 borsh = "0.9.1"
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.48"
