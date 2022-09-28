@@ -91,12 +91,13 @@ fn main() -> Result<()> {
     //test_add_collection()?;
     //mint_master_edition().unwrap();
     //coin::mint().unwrap();
-    coin::issue(Pubkey::from_str("87p3mq7h69UwJnkwsEio84tbM8DXyTg6rx3SJxhRF5st").unwrap());
+    //coin::issue(Pubkey::from_str("87p3mq7h69UwJnkwsEio84tbM8DXyTg6rx3SJxhRF5st").unwrap());
     //coin::transfer().unwrap();
     //nft::transfer().unwrap();
     //nft::burn().unwrap();
     //test_mint_nft(&get_wallet("~/.config/solana/id.json".to_string())).unwrap();
     //nft::update_meta().unwrap();
+    coin::update_icon().unwrap();
 
     Ok(())
 }

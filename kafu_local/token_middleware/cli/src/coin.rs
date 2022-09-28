@@ -6,7 +6,7 @@ use anchor_client::anchor_lang::Key;
 use anchor_client::anchor_lang::prelude::Pubkey;
 use anchor_client::anchor_lang::solana_program::program_pack::Pack;
 use borsh::BorshDeserialize;
-use mpl_token_metadata::state::Collection;
+use mpl_token_metadata::state::{Collection, Metadata, TokenMetadataAccount};
 use solana_client::nonce_utils::get_account;
 use solana_sdk::account::ReadableAccount;
 use solana_sdk::commitment_config::CommitmentConfig;
@@ -124,6 +124,29 @@ pub fn transfer() -> Result<()>{
     let mint_res = program
         .request()
         .instruction(mint_build.instructions()?.first().unwrap().to_owned())
+        .send()?;
+    println!("call res {}", mint_res);
+    Ok(())
+}
+
+pub fn update_icon() -> Result<()>{
+    let coin_mint = Pubkey::from_str("Ba5cuVSN5p2BwNxfFJR74yLaE61q3ugUmKWxnRtirVFi").unwrap();
+    let coin_metadata = find_metadata_pda(&coin_mint);
+    let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
+    let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
+    let test1 = program.rpc().get_account(&coin_metadata).unwrap().data;
+    let mut old_data = solana_sdk::borsh::try_from_slice_unchecked::<Metadata, >(test1.as_slice()).unwrap().data;
+    old_data.uri = "https://bafybeihome3tmx7xdhfj6nt63pttafzmjchzib4kgcpdotj22bnczp53ji.ipfs.nftstorage.link/kin.json".to_string();
+    let update_ins = mpl_token_metadata::instruction::update_metadata_accounts(
+        Pubkey::from_str(MPL_TOKEN_METADATA_ACCOUNT).unwrap(),
+        coin_metadata,
+        program.payer(),
+        None,
+        Some(old_data),
+        None);
+    let mint_res = program
+        .request()
+        .instruction(update_ins)
         .send()?;
     println!("call res {}", mint_res);
     Ok(())

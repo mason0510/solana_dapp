@@ -102,7 +102,7 @@ pub fn process_mint_coin(
             None,
             0,
             false,
-            false,
+            true,
             None,
             None,
         ),
