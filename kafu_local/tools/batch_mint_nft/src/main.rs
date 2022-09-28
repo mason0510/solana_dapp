@@ -192,7 +192,6 @@ async fn batch_mint() {
     }
     let data: Vec<Projects> = projects.read().unwrap().deref().to_owned();
     Projects::sync(data, "./test1.json").unwrap();
-    println!("edddyguo_0001 {:?}", projects);
 }
 
 fn main() -> Result<()> {

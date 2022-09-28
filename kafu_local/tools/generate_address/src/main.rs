@@ -7,7 +7,7 @@ fn main() {
         std::thread::sleep(std::time::Duration::from_secs_f32(0.0000001));
         let mut prefix = key.pubkey().to_string();
         prefix.truncate(4);
-        if prefix.eq("KAFU") {
+        if prefix.eq("KAFU") || prefix.eq("kafu"){
             println!(
                 "pubkey {},prikey {:?},prikey_str {}",
                 key.pubkey().to_string(),
