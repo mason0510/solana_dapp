@@ -50,9 +50,9 @@ pub fn mint() -> Result<Pubkey> {
         })
         .args(token_middleware_instructions::CoinMint{
             symbol: "K".to_string(),
-            name: now,
-            uri: "https://iqb3pvule5lf3ouoxteiy4cxnz437w6prg4ohqblliqvmkmsa6na.arweave.net/RAO31osnVl26jrzIjHBXbnm_28-JuOPAK1ohVimSB5o".to_string(),
-            init_supply: 12345678u64 * 10u64.pow(9)
+            name: "Kin".to_string(),
+            uri: "https://bafybeihome3tmx7xdhfj6nt63pttafzmjchzib4kgcpdotj22bnczp53ji.ipfs.nftstorage.link/kin.json".to_string(),
+            init_supply: 100_000_000u64 * 10u64.pow(9)
         });
 
     let mint_res = program
@@ -81,7 +81,7 @@ pub fn issue(coin_pub_key: Pubkey) -> Result<()>{
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
         })
         .args(token_middleware_instructions::CoinIssue{
-            amount: 12345678u64 * 10u64.pow(9)
+            amount: 1_000_000u64 * 10u64.pow(9)
         });
 
     let mint_res = program

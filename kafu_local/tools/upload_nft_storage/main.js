@@ -5,6 +5,26 @@ import path from 'path'
 const endpoint = 'https://api.nft.storage' // the default
 const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDBmQzc0MTY4RjUxZTk0NjU3ODE4N0EwMTBmMjdBMjllOTFmQzZjYmEiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY1OTYwMzkyNzI3MywibmFtZSI6InNvbGFuYSJ9.cNyVRbXYsObBPVvXDax2kYwMRtROHEFim9hVdfI-0gg' // your API key from https://nft.storage/manage
 
+async function upload_kin(storage,project_dir,name){
+    console.log("0001")
+    let metadata_path = path.join(project_dir,"json","kin.json");
+    let image_data = fs.readFileSync(path.join(project_dir,"image/0.png"));
+    let image_cid = await storage.storeBlob(new Blob([image_data]))
+    console.log("collection image %s cid %s",name,image_cid);
+    let metadata = {
+        name: name,
+        symbol: '',
+        description: '',
+        image: 'https://'+image_cid+'.ipfs.nftstorage.link',
+        external_url:"",
+        attributes: []
+    };
+    fs.writeFileSync(metadata_path,JSON.stringify(metadata));
+    let file_data = new File([  fs.readFileSync(metadata_path)],"kin.json");
+    const metadata_dir_cid = await storage.storeDirectory([file_data])
+    return "https://"+metadata_dir_cid+".ipfs.nftstorage.link/kin.json"
+}
+
 async function upload_collection(storage,project_dir,name){
     console.log("0001")
     let metadata_path = path.join(project_dir,"json","collection.json");
@@ -22,7 +42,6 @@ async function upload_collection(storage,project_dir,name){
     fs.writeFileSync(metadata_path,JSON.stringify(metadata));
     let file_data = new File([  fs.readFileSync(metadata_path)],"collection.json");
     const metadata_dir_cid = await storage.storeDirectory([file_data])
-    //console.log("name %s dir cid: https://%s.ipfs.nftstorage.link/collection.json",name,metadata_dir_cid);
     return "https://"+metadata_dir_cid+".ipfs.nftstorage.link/collection.json"
 }
 
@@ -65,8 +84,10 @@ async function main() {
     console.log("000__001")
     const storage = new NFTStorage({ endpoint, token })
     var upload_cids = []
-    //await upload(storage,"./1.png","room_0926_0001",0);
-    //upload_collection
+    //Kcoin
+    let kcoin_uri = await upload_kin(storage,"./resource/kin/","Kin")
+    console.log("Kin_uri ",kcoin_uri);
+
     //todo: config
     //room
     for (let level = 1; level < 2; level++) {
