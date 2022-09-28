@@ -110,6 +110,7 @@ pub struct MintInfo {
 pub struct Projects {
     pub collection_mint_key: String,
     pub mints: Vec<MintInfo>,
+    pub name: String
 }
 
 
@@ -156,14 +157,13 @@ async fn batch_mint() {
         println!("complete mint collection {} ,mint key {}", project_info.project,collection_mint_key.to_string());
         let projects_arc1 = projects.clone();
         //并发和cpu数量绑定
+        let mut mint_infos = Arc::new(RwLock::new(vec![]));
         rayon::scope(|s| {
-            let mut mint_infos = Arc::new(RwLock::new(vec![]));
-            for id in 0..project_info.supply {
-                let project_info = project_info.clone();
+           for id in 0..project_info.supply {
+                    let project_info = project_info.clone();
                 let collection = collection.clone();
                 let mint_infos = mint_infos.clone();
                 s.spawn(move |_| {
-                    //todo: arc
                     let client = get_wallet("~/.config/solana/id.json".to_string());
                     let token_name = format!("{} #{}", project_info.project, id);
                     let token_uri = format!("{}/{}.json", project_info.token_uri, id);
@@ -182,10 +182,12 @@ async fn batch_mint() {
                     println!("complete mint {} #{},mint key {}", project_info.project, id,mint_key.to_string());
                 })
             }
-            projects_arc1.clone().write().unwrap().push(Projects {
-                collection_mint_key: collection_mint_key.to_string(),
-                mints: mint_infos.read().unwrap().deref().to_owned(),
-            });
+
+        });
+        projects_arc1.clone().write().unwrap().push(Projects {
+            collection_mint_key: collection_mint_key.to_string(),
+            mints: mint_infos.read().unwrap().deref().to_owned(),
+            name: project_info.project
         });
     }
     let data: Vec<Projects> = projects.read().unwrap().deref().to_owned();
