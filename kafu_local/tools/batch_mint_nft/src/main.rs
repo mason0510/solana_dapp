@@ -136,7 +136,7 @@ pub fn get_wallet(keypair_path: String) -> Client {
 
 
 async fn batch_mint() {
-    let mut project_infos: Vec<ProjectInfo> = ProjectInfo::load("./upload_cids.json").unwrap();
+    let mut project_infos: Vec<ProjectInfo> = ProjectInfo::load("./upload_cids.json_1").unwrap();
     println!("{:#?}", project_infos);
     //let project_infos = vec![project_infos.first().unwrap().to_owned()];
     let mut projects = Arc::new(RwLock::new(vec![]));
@@ -151,7 +151,7 @@ async fn batch_mint() {
             }
         }
         let collection = Collection {
-            verified: true,
+            verified: false,
             key: collection_mint_key,
         };
         println!("complete mint collection {} ,mint key {}", project_info.project,collection_mint_key.to_string());
@@ -159,8 +159,8 @@ async fn batch_mint() {
         //并发和cpu数量绑定
         let mut mint_infos = Arc::new(RwLock::new(vec![]));
         rayon::scope(|s| {
-           for id in 0..project_info.supply {
-                    let project_info = project_info.clone();
+           for id in 0..1 {
+                let project_info = project_info.clone();
                 let collection = collection.clone();
                 let mint_infos = mint_infos.clone();
                 s.spawn(move |_| {

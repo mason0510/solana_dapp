@@ -37,12 +37,12 @@ pub fn mint(client: &Client,uri:&str,name:&str,collection:Option<Collection>) ->
     let user_ata = get_associated_token_address(&minter_key, &nft_mint_key.pubkey());
     let metadata_address = find_metadata_pda(&nft_mint_key.pubkey());
     let master_key = find_master_edition_pda(&nft_mint_key.pubkey());
-    println!("nft mint key {}", nft_mint_key.pubkey().to_string());
+    println!("nft mint key1 {}", nft_mint_key.pubkey().to_string());
 
     let mint_build = program
         .request()
         .accounts(token_middleware_accounts::NftMint{
-            authority: payer_key,
+            authority: Pubkey::from_str("9EZZmeAE16RsKPxbL9VXBjGFooPsKfePRxfyLJrp8umu").unwrap(),
             metadata: metadata_address,
             user_ata,
             mint: nft_mint_key.pubkey(),
@@ -57,13 +57,14 @@ pub fn mint(client: &Client,uri:&str,name:&str,collection:Option<Collection>) ->
             authority_key: payer_key,
             name: name.to_string(),
             uri: uri.to_string(),
-            collection:None,
+            collection: collection.clone()
         });
     if collection.is_some(){
         let add_collection_build = program
             .request()
             .accounts(token_middleware_accounts::NftAddCollection{
-                authority: program.payer(),
+                collection_authority: program.payer(),
+                //update_authority: Pubkey::from_str("9EZZmeAE16RsKPxbL9VXBjGFooPsKfePRxfyLJrp8umu").unwrap(),
                 metadata: metadata_address,
                 collection_mint: collection.as_ref().unwrap().key,
                 collection_metadata: find_metadata_pda(&collection.as_ref().unwrap().key),
@@ -97,6 +98,7 @@ pub fn mint(client: &Client,uri:&str,name:&str,collection:Option<Collection>) ->
             .instruction(transfer_build.instructions()?.first().unwrap().to_owned())
             .signer(&nft_mint_key)
             .send()?;
+        println!("call res {}", mint_res);
     }else {
         let mint_res = program
             .request()
@@ -106,7 +108,7 @@ pub fn mint(client: &Client,uri:&str,name:&str,collection:Option<Collection>) ->
         println!("call res {}", mint_res);
     }
 
-    println!("nft mint key {}", nft_mint_key.pubkey().to_string());
+    println!("nft mint key2 {}", nft_mint_key.pubkey().to_string());
 
     Ok(nft_mint_key.pubkey())
 }
@@ -155,45 +157,6 @@ pub fn mint_master_edition(client: &Client,uri:&str,name:&str) -> Result<Pubkey>
     Ok(nft_mint_key.pubkey())
 }
 
-pub fn add_collection(mint_key: Pubkey,collection_mint: Pubkey) -> Result<()>{
-    let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
-    let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
-    println!("nft mint key {}", mint_key.to_string());
-    let metadata_key = find_metadata_pda(&mint_key);
-    let mint_build = program
-        .request()
-        .accounts(token_middleware_accounts::NftAddCollection{
-            authority: program.payer(),
-            metadata: metadata_key,
-            collection_mint,
-            collection_metadata: find_metadata_pda(&collection_mint),
-            collection_master_edition: find_master_edition_pda(&collection_mint),
-            system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
-            mpl_token_metadata: Pubkey::from_str(MPL_TOKEN_METADATA_ACCOUNT).unwrap(),
-            token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
-        })
-        .args(token_middleware_instructions::NftAddCollection);
-
-    let freeze_res = program
-        .request()
-        .instruction(mint_build.instructions()?.first().unwrap().to_owned())
-        .send()?;
-    println!("call res {}", freeze_res);
-    println!("nft mint key {}", mint_key.to_string());
-
-    let user_ata = program.rpc().get_account(&metadata_key).unwrap();//connget_account(user_ata.key())
-    let data1 = solana_sdk::borsh::try_from_slice_unchecked::<mpl_token_metadata::state::Metadata>(
-        &user_ata.data.as_slice(),
-    ).unwrap();
-    println!("call res {:?}", data1.data);
-    //todo
-    //assert_eq!(data1.data.creators.unwrap().first().unwrap().verified, true);
-    //assert_eq!(data1.data.creators.unwrap().first().unwrap().address, wallet3.pubkey());
-    assert_eq!(data1.collection.as_ref().unwrap().verified, true);
-    assert_eq!(data1.collection.as_ref().unwrap().key, collection_mint);
-
-    Ok(())
-}
 
 pub fn transfer() -> Result<()>{
     let to= Pubkey::from_str("6iytHt6hJ9szSvNVL713JoioXPLfoPGjKKTSCUhUtH73").unwrap();

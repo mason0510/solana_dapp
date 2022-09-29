@@ -24,37 +24,25 @@ use {
 
 pub fn process_nft_add_collection(ctx: Context<NftAddCollection>) -> Result<()>{
     msg!("start add collection {}",ctx.accounts.metadata.key());
-    let instruction = token_instruction::set_and_verify_collection(
+    let instruction = token_instruction::verify_collection(
         ctx.accounts.mpl_token_metadata.key(),
         ctx.accounts.metadata.key(),
-        ctx.accounts.authority.key(),
-        ctx.accounts.authority.key(),
-        ctx.accounts.authority.key(),
+        ctx.accounts.collection_authority.key(),
+        ctx.accounts.collection_authority.key(),
         ctx.accounts.collection_mint.key(),
         ctx.accounts.collection_metadata.key(),
         ctx.accounts.collection_master_edition.key(),
-        None,
+            None
     );
     invoke(
         &instruction,
         &[
-            ctx.accounts.authority.to_account_info(),
+            ctx.accounts.collection_authority.to_account_info(),
             ctx.accounts.metadata.to_account_info(),
             ctx.accounts.collection_mint.to_account_info(),
             ctx.accounts.collection_metadata.to_account_info(),
             ctx.accounts.collection_master_edition.to_account_info(),
         ])?;
-
-    let old_data =  Metadata::from_account_info(ctx.accounts.metadata.as_ref()).unwrap();
-    //todo: verify creator
-    let ins2 = mpl_token_metadata::instruction::update_metadata_accounts(
-        ctx.accounts.mpl_token_metadata.key(),
-        ctx.accounts.metadata.key(),
-        ctx.accounts.authority.key(),
-        None,
-        Some(old_data.data),
-        None,
-        );
     Ok(())
 }
 
@@ -62,7 +50,7 @@ pub fn process_nft_add_collection(ctx: Context<NftAddCollection>) -> Result<()>{
 #[derive(Accounts)]
 pub struct NftAddCollection<'info> {
     #[account(mut)]
-    pub authority: Signer<'info>,
+    pub collection_authority: Signer<'info>,
     /// CHECK: We're about to create this with Anchor
     #[account(mut)]
     pub metadata: AccountInfo<'info>,
