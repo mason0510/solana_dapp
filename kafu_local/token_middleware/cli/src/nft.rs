@@ -193,7 +193,7 @@ pub fn burn() -> Result<()>{
 pub fn freeze(client: &Client,mint_key: Pubkey) -> Result<()>{
     let wallet3 = read_keypair_file(&*shellexpand::tilde("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json", )).unwrap();
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
-    let to= Pubkey::from_str("EpGFtdBwTB5BRJZRS98wapNugb4eGjrAQFrBYphCLZMd").unwrap();
+    let to= Pubkey::from_str("677NzkzkDKT9wXDMXGPUvbFp1T7XzJtZZxcRaBAaSvNa").unwrap();
     let minter_key = program.payer();
     println!("nft mint key {}", mint_key.to_string());
     let user_ata = get_associated_token_address(&to, &mint_key);

@@ -92,14 +92,14 @@ fn main() -> Result<()> {
     //coin::mint().unwrap();
     //coin::issue(Pubkey::from_str("87p3mq7h69UwJnkwsEio84tbM8DXyTg6rx3SJxhRF5st").unwrap());
     //coin::transfer().unwrap();
-    nft::mint().unwrap();
+    //nft::mint().unwrap();
     //nft::transfer().unwrap();
     //nft::freeze(&get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string()),
-                            //Pubkey::from_str("CBhKjBWrtWK5Zx54KvWDjNRaqENCyDh2JB8cWt14JCAt").unwrap()).unwrap();
+                            //Pubkey::from_str("7g7EMgCoX7x5GV69w59VRCWaJwTj6NxLvBcQi7dxAJYG").unwrap()).unwrap();
     //nft::burn().unwrap();
     //test_mint_nft(&get_wallet("~/.config/solana/id.json".to_string())).unwrap();
     //nft::update_meta().unwrap();
-    //coin::update_icon().unwrap();
+    coin::update_icon().unwrap();
     //coin::transfer().unwrap();
 
     Ok(())

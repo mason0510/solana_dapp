@@ -136,7 +136,7 @@ pub fn update_icon() -> Result<()>{
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
     let test1 = program.rpc().get_account(&coin_metadata).unwrap().data;
     let mut old_data = solana_sdk::borsh::try_from_slice_unchecked::<Metadata, >(test1.as_slice()).unwrap().data;
-    old_data.uri = "https://bafybeihome3tmx7xdhfj6nt63pttafzmjchzib4kgcpdotj22bnczp53ji.ipfs.nftstorage.link/kin.json".to_string();
+    old_data.uri = "https://bafybeiaybw2u4vfama3n6j6r2rehqmvarysruzqdo4humlvaejd5wwbuae.ipfs.nftstorage.link/kin.json".to_string();
     let update_ins = mpl_token_metadata::instruction::update_metadata_accounts(
         Pubkey::from_str(MPL_TOKEN_METADATA_ACCOUNT).unwrap(),
         coin_metadata,
