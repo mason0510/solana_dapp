@@ -71,7 +71,7 @@ pub fn issue(coin_pub_key: Pubkey) -> Result<()>{
     let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
     let user_ata = get_associated_token_address(&program.payer(), &coin_pub_key);
-    let now = format!("kcoin_{}",timestamp() % 100000 );
+    let now = format!("kcoin_{}",solana_sdk::timing::timestamp() % 100000 );
     let mint_build = program
         .request()
         .accounts(token_middleware_accounts::CoinIssue{
@@ -93,9 +93,9 @@ pub fn issue(coin_pub_key: Pubkey) -> Result<()>{
 }
 
 pub fn transfer() -> Result<()>{
-    let to= Pubkey::from_str("677NzkzkDKT9wXDMXGPUvbFp1T7XzJtZZxcRaBAaSvNa").unwrap();
+    let to= Pubkey::from_str("9EZZmeAE16RsKPxbL9VXBjGFooPsKfePRxfyLJrp8umu").unwrap();
     let amount = 12345678u64 * 10u64.pow(9);
-    let coin_pub_key = Pubkey::from_str("BSMfCML1toUspfz6KyqPDJKabAoAGkjnYheXWgnkSgTV").unwrap();
+    let coin_pub_key = Pubkey::from_str("Ba5cuVSN5p2BwNxfFJR74yLaE61q3ugUmKWxnRtirVFi").unwrap();
 
     let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
     //todo: 这个也封装到get_wallet里面

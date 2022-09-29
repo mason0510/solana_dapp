@@ -28,38 +28,32 @@ use crate::utils::{find_master_edition_pda, find_metadata_pda};
 use crate::{MEM_COLLECTION_MINT, MPL_TOKEN_METADATA_ACCOUNT, NFT_MINT_CONTRACT, SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID, SPL_PROGRAM_ID, SYSTEM_PROGRAM_ID, SYSTEM_RENT_ID, TOKEN_MIDDLEWARE};
 
 //可以替第三方铸造
-pub fn mint(client: &Client) -> Result<Pubkey> {
-    //FiTpF8mATTwcvLcSusp3fYXm6GQfisL5umnUZJ962zxx
-    let wallet3 = read_keypair_file(&*shellexpand::tilde(
+pub fn mint() -> Result<Pubkey> {
+    let client = crate::get_wallet("~/.config/solana/id.json".to_string());
+    let authority_keypair = read_keypair_file(&*shellexpand::tilde(
         "/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json",
     ))
     .expect("Example requires a keypair file");
 
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
-    let payer_key = program.payer();
-    let minter_key = program.payer();
-    //let minter_key = wallet3.pubkey();
+    let mint_key = Keypair::new();
+    println!("nft mint key {}", mint_key.pubkey().to_string());
 
-    let nft_mint_key = Keypair::new();
-    println!("nft mint key {}", nft_mint_key.pubkey().to_string());
 
-    //当前记忆碎皮的集合的meta_account,权限已经给了付鸿
-    //let memorise_mint_account = "6P64iPbit6iUbwMj55pXXEu7GxUaE9jPVqWCmomyqPph";
+    let user_ata = get_associated_token_address(&program.payer(), &mint_key.pubkey());
+    let metadata_address = find_metadata_pda(&mint_key.pubkey());
+    let master_key = find_master_edition_pda(&mint_key.pubkey());
 
-    let user_ata = get_associated_token_address(&minter_key, &nft_mint_key.pubkey());
-    let metadata_address = find_metadata_pda(&nft_mint_key.pubkey());
-    let master_key = find_master_edition_pda(&nft_mint_key.pubkey());
-
-    println!("{},{},{},{},{},{}",metadata_address,user_ata,nft_mint_key.pubkey(),wallet3.pubkey(),payer_key,master_key);
+    //println!("{},{},{},{},{},{}", metadata_address, user_ata, mint_key.pubkey(), authority_keypair.pubkey(), payer_key, master_key);
     let now = format!("timestamp_{}",timestamp() % 100000 );
     let mint_build = program
         .request()
         .accounts(token_middleware_accounts::NftMint{
-            authority: wallet3.pubkey(),
+            authority: authority_keypair.pubkey(),
             metadata: metadata_address,
             user_ata,
-            mint: nft_mint_key.pubkey(),
-            minter: minter_key,
+            mint: mint_key.pubkey(),
+            minter: program.payer(),
             rent: Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
             system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
@@ -67,7 +61,7 @@ pub fn mint(client: &Client) -> Result<Pubkey> {
             associated_token_program: Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap(),
         })
         .args(token_middleware_instructions::NftMint{
-            authority_key: wallet3.pubkey(),
+            authority_key: authority_keypair.pubkey(),
             name: now,
             uri: "https://bafybeiagelxwxuundel3rjqydvunf24llrg4e2a5l4fje27arsdzhdgaqu.ipfs.nftstorage.link/0.json".to_string(),
             collection:None
@@ -76,13 +70,12 @@ pub fn mint(client: &Client) -> Result<Pubkey> {
     let mint_res = program
         .request()
         .instruction(mint_build.instructions()?.first().unwrap().to_owned())
-        .signer(&nft_mint_key)
-        //.signer(&wallet3)
+        .signer(&mint_key)
         .send()?;
     println!("call res {}", mint_res);
-    println!("nft mint key {}", nft_mint_key.pubkey().to_string());
+    println!("nft mint key {}", mint_key.pubkey().to_string());
 
-    Ok(nft_mint_key.pubkey())
+    Ok(mint_key.pubkey())
 }
 
 
@@ -200,10 +193,20 @@ pub fn burn() -> Result<()>{
 pub fn freeze(client: &Client,mint_key: Pubkey) -> Result<()>{
     let wallet3 = read_keypair_file(&*shellexpand::tilde("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json", )).unwrap();
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
+    let to= Pubkey::from_str("EpGFtdBwTB5BRJZRS98wapNugb4eGjrAQFrBYphCLZMd").unwrap();
     let minter_key = program.payer();
     println!("nft mint key {}", mint_key.to_string());
-    let user_ata = get_associated_token_address(&minter_key, &mint_key);
+    let user_ata = get_associated_token_address(&to, &mint_key);
 
+    /***
+    pub authority: Signer<'info>,
+    pub mint: UncheckedAccount<'info>,
+    pub user_ata: UncheckedAccount<'info>,
+    pub mint_owner: UncheckedAccount<'info>,
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, token::Token>,
+nft_freeze
+    */
     let mint_build = program
         .request()
         .accounts(token_middleware_accounts::NftFreeze{
@@ -275,9 +278,9 @@ pub fn add_collection(mint_key: Pubkey,collection_mint: Pubkey) -> Result<()>{
 }
 
 pub fn transfer() -> Result<()>{
-    let to= Pubkey::from_str("6iytHt6hJ9szSvNVL713JoioXPLfoPGjKKTSCUhUtH73").unwrap();
-    let mint = Pubkey::from_str("HGoRcXPNjLafM8Cc4SJRcXbd7FDNGcTXG2ShmYmLgvWh").unwrap();
-    let client = crate::get_wallet("~/.config/solana/id.json".to_string());
+    let to= Pubkey::from_str("EpGFtdBwTB5BRJZRS98wapNugb4eGjrAQFrBYphCLZMd").unwrap();
+    let mint = Pubkey::from_str("Gua9n1w2rLVfyNzVpZDZv9i1YDRUovDdFybpj5FchdX1").unwrap();
+    let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
     let from_ata = get_associated_token_address(&program.payer(), &mint);
     let to_ata = get_associated_token_address(&to, &mint);
@@ -307,7 +310,7 @@ pub fn transfer() -> Result<()>{
 }
 
 pub fn update_meta() -> Result<()>{
-    let mint = Pubkey::from_str("5s9cqZ3yPmY1ptAyzKSuv4QDen9QeunwVtCcmCCUqQDW").unwrap();
+    let mint = Pubkey::from_str("Gua9n1w2rLVfyNzVpZDZv9i1YDRUovDdFybpj5FchdX1").unwrap();
     let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
     let mint_build = program

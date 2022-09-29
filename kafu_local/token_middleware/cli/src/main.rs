@@ -62,7 +62,7 @@ const TOKEN_MIDDLEWARE: &'static str = "8ZjekeVj2PHuVmaTX2Ti7vv1tZy3THJ9fZY2JJxw
 
 //some assert
 fn test_mint_nft(client: &Client) -> Result<Pubkey>{
-    nft::mint(client)
+    nft::mint()
 }
 fn test_freeze(client: &Client,mint_key: Pubkey)-> Result<()>{
     //nft::freeze(client,Pubkey::from_str("AYU9HGf37Ji5cTwvH8bJXEFfu5uDMm7dhQ5s1fLcBSmq").unwrap())
@@ -70,8 +70,7 @@ fn test_freeze(client: &Client,mint_key: Pubkey)-> Result<()>{
 }
 
 fn test_add_collection() -> Result<()>{
-    let client = get_wallet("~/.config/solana/id.json".to_string());
-    let mint_key = nft::mint(&client).unwrap();
+    let mint_key = nft::mint().unwrap();
     nft::add_collection(mint_key,Pubkey::from_str("2TDavXVuoknovjmVTyiUPaBdQGnTB7q4sJZK1yN7AGd5").unwrap())
 }
 pub fn get_wallet(keypair_path: String) -> Client{
@@ -93,11 +92,15 @@ fn main() -> Result<()> {
     //coin::mint().unwrap();
     //coin::issue(Pubkey::from_str("87p3mq7h69UwJnkwsEio84tbM8DXyTg6rx3SJxhRF5st").unwrap());
     //coin::transfer().unwrap();
+    nft::mint().unwrap();
     //nft::transfer().unwrap();
+    //nft::freeze(&get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string()),
+                            //Pubkey::from_str("CBhKjBWrtWK5Zx54KvWDjNRaqENCyDh2JB8cWt14JCAt").unwrap()).unwrap();
     //nft::burn().unwrap();
     //test_mint_nft(&get_wallet("~/.config/solana/id.json".to_string())).unwrap();
     //nft::update_meta().unwrap();
-    coin::update_icon().unwrap();
+    //coin::update_icon().unwrap();
+    //coin::transfer().unwrap();
 
     Ok(())
 }

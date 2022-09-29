@@ -87,12 +87,16 @@ pub fn process_mint_nft(
     )?;
 
     msg!("Creating metadata account...");
-    msg!("Metadata account address: {}", &ctx.accounts.metadata.to_account_info().key());
+    msg!("Metadata account addressss5: {}", &ctx.accounts.minter.key().to_string());
     let creator = Creator{
-        address: ctx.accounts.authority.key(),
+        address: ctx.accounts.minter.key(),
         verified: true,
         share: 100
     };
+    /***
+       fixme：因为creator验证需要签名，如果update_authority不是minter的话,又没办法签名会报错"You cannot unilaterally verify another creator, they must sign"
+       目前方案是，先验证creator，再更新 update_authority
+     */
     invoke(
         &token_instruction::create_metadata_accounts_v2(
             ctx.accounts.token_metadata_program.key(),
@@ -100,7 +104,7 @@ pub fn process_mint_nft(
             ctx.accounts.mint.key(),
             ctx.accounts.minter.key(),
             ctx.accounts.minter.key(),
-            ctx.accounts.authority.key(),
+            ctx.accounts.minter.key(),
             metadata_title,
             "".to_string(),
              metadata_uri,
@@ -137,7 +141,7 @@ pub fn process_mint_nft(
         &spl_token::instruction::set_authority(
             &ctx.accounts.token_program.key,
             &ctx.accounts.mint.key(),
-            Some(&ctx.accounts.authority.key()),
+            Some(&authority_key),
             AuthorityType::FreezeAccount,
             &ctx.accounts.minter.key(),
             &[&ctx.accounts.minter.key()])?,
@@ -145,6 +149,22 @@ pub fn process_mint_nft(
             ctx.accounts.minter.to_account_info(),
             ctx.accounts.mint.to_account_info(),
         ])?;
+
+
+    invoke(
+    &mpl_token_metadata::instruction::update_metadata_accounts(
+        ctx.accounts.token_metadata_program.key(),
+        ctx.accounts.metadata.key(),
+        ctx.accounts.minter.key(),
+        Some(ctx.accounts.authority.key()),
+        None,
+        None,
+    ),
+    &[
+        ctx.accounts.authority.to_account_info(),
+        ctx.accounts.metadata.to_account_info(),
+        ctx.accounts.minter.to_account_info()
+    ])?;
 
     msg!("Token mint process completed successfully.");
 
@@ -189,7 +209,6 @@ pub struct NftMint<'info> {
  mut
     )]
     pub mint:  UncheckedAccount<'info>,*/
-
 
     #[account(mut)]
     pub minter: Signer<'info>,
