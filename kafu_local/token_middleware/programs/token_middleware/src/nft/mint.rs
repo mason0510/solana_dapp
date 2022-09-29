@@ -20,7 +20,6 @@ use {
 };
 pub fn process_mint_nft(
     ctx: Context<NftMint>,
-    authority_key : Pubkey,
     metadata_title: String,
     metadata_uri: String,
     collection: Option<Collection>
@@ -136,12 +135,12 @@ pub fn process_mint_nft(
             ctx.accounts.minter.to_account_info(),
             ctx.accounts.user_ata.to_account_info(),
         ])?;*/
-
+    msg!("start use {} as freeze_authority ",ctx.accounts.authority.key());
     invoke(
         &spl_token::instruction::set_authority(
             &ctx.accounts.token_program.key,
             &ctx.accounts.mint.key(),
-            Some(&authority_key),
+            Some(&ctx.accounts.authority.key()),
             AuthorityType::FreezeAccount,
             &ctx.accounts.minter.key(),
             &[&ctx.accounts.minter.key()])?,
@@ -150,7 +149,7 @@ pub fn process_mint_nft(
             ctx.accounts.mint.to_account_info(),
         ])?;
 
-
+    msg!("start use {} as update_authority ",ctx.accounts.authority.key());
     invoke(
     &mpl_token_metadata::instruction::update_metadata_accounts(
         ctx.accounts.token_metadata_program.key(),

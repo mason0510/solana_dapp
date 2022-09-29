@@ -3,5 +3,6 @@
 anchor build
 anchor deploy
 anchor idl parse -f programs/token_middleware/src/lib.rs -o idl/token_middleware_go_v1.json
+cargo test
 ```
 

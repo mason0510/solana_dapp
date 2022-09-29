@@ -1,3 +1,5 @@
+#![cfg(test)]
+
 use anchor_client::solana_sdk::signature::{Keypair, Signer};
 use anchor_client::{Client, Cluster};
 use anyhow::Result;
@@ -150,4 +152,44 @@ pub fn update_icon() -> Result<()>{
         .send()?;
     println!("call res {}", mint_res);
     Ok(())
+}
+
+/***
+
+    //test_add_collection()?;
+    //coin::mint().unwrap();
+    //coin::issue(Pubkey::from_str("87p3mq7h69UwJnkwsEio84tbM8DXyTg6rx3SJxhRF5st").unwrap());
+    //coin::transfer().unwrap();
+    //coin::transfer().unwrap();
+*/
+mod test {
+    use super::*;
+    use crate::*;
+
+    #[test]
+    fn transfer_test(){
+        //nft::transfer().unwrap();
+    }
+    #[test]
+    fn mint_test(){
+        //nft::mint().unwrap();
+    }
+    #[test]
+    fn issue_test(){
+        //    nft::add_collection(mint_key,Pubkey::from_str("2TDavXVuoknovjmVTyiUPaBdQGnTB7q4sJZK1yN7AGd5").unwrap())
+    }
+    #[test]
+    fn update_metadata_test(){
+        //nft::update_meta().unwrap();
+    }
+
+    #[test]
+    fn freeze_test(){
+        //    nft::freeze(client,mint_key)
+    }
+
+    #[test]
+    fn thaw_test(){
+        //    nft::freeze(client,mint_key)
+    }
 }

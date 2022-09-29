@@ -54,7 +54,6 @@ pub fn mint(client: &Client,uri:&str,name:&str,collection:Option<Collection>) ->
             associated_token_program: Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap(),
         })
         .args(token_middleware_instructions::NftMint{
-            authority_key: payer_key,
             name: name.to_string(),
             uri: uri.to_string(),
             collection: collection.clone()

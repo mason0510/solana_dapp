@@ -3,6 +3,7 @@ pub mod nft;
 pub mod utils;
 extern crate core;
 
+
 use std::cmp::min;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::solana_sdk::signature::read_keypair_file;
@@ -60,19 +61,6 @@ const MEM_COLLECTION_MINT: &'static str = "8zKSXBACKpaKvgDCYdDwpJGTVDSBCtAgucJpm
 const TOKEN_MIDDLEWARE: &'static str = "8ZjekeVj2PHuVmaTX2Ti7vv1tZy3THJ9fZY2JJxwMaQv";
 
 
-//some assert
-fn test_mint_nft(client: &Client) -> Result<Pubkey>{
-    nft::mint()
-}
-fn test_freeze(client: &Client,mint_key: Pubkey)-> Result<()>{
-    //nft::freeze(client,Pubkey::from_str("AYU9HGf37Ji5cTwvH8bJXEFfu5uDMm7dhQ5s1fLcBSmq").unwrap())
-    nft::freeze(client,mint_key)
-}
-
-fn test_add_collection() -> Result<()>{
-    let mint_key = nft::mint().unwrap();
-    nft::add_collection(mint_key,Pubkey::from_str("2TDavXVuoknovjmVTyiUPaBdQGnTB7q4sJZK1yN7AGd5").unwrap())
-}
 pub fn get_wallet(keypair_path: String) -> Client{
     let payer = read_keypair_file(&*shellexpand::tilde(&keypair_path))
         .expect("Example requires a keypair file");
@@ -87,20 +75,5 @@ fn main() -> Result<()> {
     println!("Starting test...");
     //replace with fix code
     let _opts = Opts::parse();
-    //test_add_collection()?;
-    //mint_master_edition().unwrap();
-    //coin::mint().unwrap();
-    //coin::issue(Pubkey::from_str("87p3mq7h69UwJnkwsEio84tbM8DXyTg6rx3SJxhRF5st").unwrap());
-    //coin::transfer().unwrap();
-    //nft::mint().unwrap();
-    //nft::transfer().unwrap();
-    //nft::freeze(&get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string()),
-                            //Pubkey::from_str("7g7EMgCoX7x5GV69w59VRCWaJwTj6NxLvBcQi7dxAJYG").unwrap()).unwrap();
-    //nft::burn().unwrap();
-    //test_mint_nft(&get_wallet("~/.config/solana/id.json".to_string())).unwrap();
-    //nft::update_meta().unwrap();
-    coin::update_icon().unwrap();
-    //coin::transfer().unwrap();
-
     Ok(())
 }

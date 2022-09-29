@@ -1,3 +1,4 @@
+#![cfg(test)]
 extern crate core;
 
 use std::fs::Metadata;
@@ -61,7 +62,6 @@ pub fn mint() -> Result<Pubkey> {
             associated_token_program: Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap(),
         })
         .args(token_middleware_instructions::NftMint{
-            authority_key: authority_keypair.pubkey(),
             name: now,
             uri: "https://bafybeiagelxwxuundel3rjqydvunf24llrg4e2a5l4fje27arsdzhdgaqu.ipfs.nftstorage.link/0.json".to_string(),
             collection:None
@@ -117,7 +117,7 @@ pub fn mint_master_edition() -> Result<Pubkey> {
     let add_collection_build = program
         .request()
         .accounts(token_middleware_accounts::NftAddCollection{
-            authority: program.payer(),
+            collection_authority: program.payer(),
             metadata: metadata_address,
             collection_mint: collection_mint_key,
             collection_metadata: find_metadata_pda(&collection_mint_key),
@@ -245,7 +245,7 @@ pub fn add_collection(mint_key: Pubkey,collection_mint: Pubkey) -> Result<()>{
     let mint_build = program
         .request()
         .accounts(token_middleware_accounts::NftAddCollection{
-            authority: program.payer(),
+            collection_authority: program.payer(),
             metadata: metadata_key,
             collection_mint,
             collection_metadata: find_metadata_pda(&collection_mint),
@@ -331,4 +331,42 @@ pub fn update_meta() -> Result<()>{
         .send()?;
     println!("call res {}", mint_res);
     Ok(())
+}
+
+mod test {
+    use super::*;
+    use crate::*;
+
+    #[test]
+    fn transfer_test(){
+        //nft::transfer().unwrap();
+    }
+    #[test]
+    fn mint_test(){
+        //nft::mint().unwrap();
+    }
+    #[test]
+    fn add_collection_test(){
+        //    nft::add_collection(mint_key,Pubkey::from_str("2TDavXVuoknovjmVTyiUPaBdQGnTB7q4sJZK1yN7AGd5").unwrap())
+    }
+    #[test]
+    fn update_metadata_test(){
+        //nft::update_meta().unwrap();
+    }
+    #[test]
+    fn mint_master_edition(){
+        //mint_master_edition().unwrap();
+    }
+    //nft::freeze(&get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string()),
+    //Pubkey::from_str("7g7EMgCoX7x5GV69w59VRCWaJwTj6NxLvBcQi7dxAJYG").unwrap()).unwrap();
+
+    #[test]
+    fn burn_test(){
+        //nft::burn().unwrap();
+    }
+
+    #[test]
+    fn freeze_test(){
+        //    nft::freeze(client,mint_key)
+    }
 }
