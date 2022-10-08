@@ -61,7 +61,7 @@ pub fn get_acc(address: Pubkey) -> solana_sdk::account::Account {
         .unwrap()
 }
 
-//根据get_program_account过滤相关ata
+//deprecated：通过find_program_address或者类似get_associated_token_address的接口查找pda，判断是否存在
 pub fn get_token_account_by_wallet(wallet_pubkey: Pubkey, mint_pubkey: Pubkey) -> Option<Pubkey> {
     let rpc_url = String::from("https://api.devnet.solana.com");
     let connection = RpcClient::new_with_commitment(rpc_url, CommitmentConfig::confirmed());
@@ -104,21 +104,6 @@ pub fn get_token_account_by_wallet(wallet_pubkey: Pubkey, mint_pubkey: Pubkey) -
     token_account.map(|token_account| token_account.0.to_owned())
 }
 
-fn spl_transfer() {
-    todo!()
-    /* let transfer_instruction = spl_token::instruction::transfer(
-        &Pubkey::from_str(SPL_PROGRAM_ID).unwrap(), &receiver_token_account,
-        &nft_token_account, &wallet3.pubkey(), &[&wallet3.pubkey()], 1).unwrap();
-    let transfer_res = program
-        .request()
-        .instruction(
-            transfer_instruction
-        )
-        .signer(&wallet3)
-        .send().unwrap();*/
-}
-
-//update nft medata
 fn update_metadata() {
     todo!()
 }

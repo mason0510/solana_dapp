@@ -1,4 +1,3 @@
-#![cfg(test)]
 extern crate core;
 
 use std::fs::Metadata;
@@ -18,6 +17,7 @@ use solana_sdk::account::ReadableAccount;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::timing::timestamp;
 use spl_associated_token_account::get_associated_token_address;
+use spl_token::instruction::AuthorityType;
 use spl_token::state::{Account, AccountState};
 
 
@@ -113,7 +113,7 @@ pub fn mint_master_edition() -> Result<Pubkey> {
         });
 
     //fixme: 目前不能直接设置collection信息
-    let collection_mint_key = Pubkey::from_str("2TDavXVuoknovjmVTyiUPaBdQGnTB7q4sJZK1yN7AGd5").unwrap();
+/*    let collection_mint_key = Pubkey::from_str("2TDavXVuoknovjmVTyiUPaBdQGnTB7q4sJZK1yN7AGd5").unwrap();
     let add_collection_build = program
         .request()
         .accounts(token_middleware_accounts::NftAddCollection{
@@ -126,12 +126,11 @@ pub fn mint_master_edition() -> Result<Pubkey> {
             mpl_token_metadata: Pubkey::from_str(MPL_TOKEN_METADATA_ACCOUNT).unwrap(),
             token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
         })
-        .args(token_middleware_instructions::NftAddCollection);
+        .args(token_middleware_instructions::NftAddCollection);*/
 
     let mint_res = program
         .request()
         .instruction(mint_build.instructions()?.first().unwrap().to_owned())
-        .instruction(add_collection_build.instructions()?.first().unwrap().to_owned())
         .signer(&nft_mint_key)
         .send()?;
     println!("call res {}", mint_res);
@@ -279,7 +278,7 @@ pub fn add_collection(mint_key: Pubkey,collection_mint: Pubkey) -> Result<()>{
 
 pub fn transfer() -> Result<()>{
     let to= Pubkey::from_str("EpGFtdBwTB5BRJZRS98wapNugb4eGjrAQFrBYphCLZMd").unwrap();
-    let mint = Pubkey::from_str("Gua9n1w2rLVfyNzVpZDZv9i1YDRUovDdFybpj5FchdX1").unwrap();
+    let mint = Pubkey::from_str("2TDavXVuoknovjmVTyiUPaBdQGnTB7q4sJZK1yN7AGd5").unwrap();
     let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
     let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
     let from_ata = get_associated_token_address(&program.payer(), &mint);
@@ -333,7 +332,32 @@ pub fn update_meta() -> Result<()>{
     Ok(())
 }
 
-mod test {
+
+pub fn update_authority() -> Result<()>{
+    //Abt6HCQQpCxrKzmrhE1rM7p9RLpCMYA5Q3om2zvLM91n
+    let mint_key = Pubkey::from_str("8FLC5ETUx3LB3u9PBKqaJ3wJVzSBw6cG4csLr171Eieo").unwrap();
+    let new_authrity = Pubkey::from_str("Abt6HCQQpCxrKzmrhE1rM7p9RLpCMYA5Q3om2zvLM93n").unwrap();
+    let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
+    let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
+    let user_ata = get_associated_token_address(&program.payer(), &mint_key);
+    let mint_res = program
+        .request()
+        .instruction(spl_token::instruction::set_authority(
+            &Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+            &mint_key,
+            Some(&new_authrity),
+            AuthorityType::FreezeAccount,
+            &program.payer(),
+            &[
+                &program.payer()
+            ])?)
+        .send()?;
+    println!("call res {}", mint_res);
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
     use super::*;
     use crate::*;
 

@@ -3,7 +3,7 @@ pub mod nft;
 pub mod utils;
 extern crate core;
 
-
+use nft::transfer;
 use std::cmp::min;
 use anchor_client::solana_sdk::commitment_config::CommitmentConfig;
 use anchor_client::solana_sdk::signature::read_keypair_file;
@@ -31,7 +31,6 @@ use {
     serde::{Deserialize, Serialize},
     serde_with::{As, DisplayFromStr},
 };
-use crate::nft::mint_master_edition;
 //import { TOKEN_PROGRAM_ID, createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, createInitializeMintInstruction, MINT_SIZE } from '@solana/spl-token' // IGNORE THESE ERRORS IF ANY
 
 #[derive(Parser, Debug)]
@@ -75,5 +74,8 @@ fn main() -> Result<()> {
     println!("Starting test...");
     //replace with fix code
     let _opts = Opts::parse();
+   // nft::mint().unwrap();
+    // nft::update_authority().unwrap();
+    coin::batch_transfer().unwrap();
     Ok(())
 }

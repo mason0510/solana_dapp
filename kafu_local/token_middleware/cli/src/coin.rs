@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use anchor_client::solana_sdk::signature::{Keypair, Signer};
 use anchor_client::{Client, Cluster};
 use anyhow::Result;
@@ -154,6 +152,48 @@ pub fn update_icon() -> Result<()>{
     Ok(())
 }
 
+
+pub fn batch_transfer() -> Result<()>{
+    let to= Pubkey::from_str("677NzkzkDKT9wXDMXGPUvbFp1T7XzJtZZxcRaBAaSvNa").unwrap();
+    let amount = 1 * 10u64.pow(9);
+    let coin_pub_key = Pubkey::from_str("Ba5cuVSN5p2BwNxfFJR74yLaE61q3ugUmKWxnRtirVFi").unwrap();
+
+    let client = crate::get_wallet("/Users/eddy/work/repo/solana/solana_dapp/my_wallet/3.json".to_string());
+    //todo: 这个也封装到get_wallet里面
+    let program = client.program(Pubkey::from_str(TOKEN_MIDDLEWARE).unwrap());
+    let from_ata = get_associated_token_address(&program.payer(), &coin_pub_key);
+    let to_ata = get_associated_token_address(&to, &coin_pub_key);
+
+
+    let mint_build = program
+        .request()
+        .accounts(token_middleware_accounts::CoinTransfer{
+            from_ata,
+            from: program.payer(),
+            to,
+            to_ata,
+            coin: coin_pub_key,
+            token_program: Pubkey::from_str(SPL_PROGRAM_ID).unwrap(),
+            associated_token_program: Pubkey::from_str(SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID).unwrap(),
+            system_program: Pubkey::from_str(SYSTEM_PROGRAM_ID).unwrap(),
+            rent:Pubkey::from_str(SYSTEM_RENT_ID).unwrap(),
+        })
+        .args(token_middleware_instructions::CoinTransfer{
+            amount
+        });
+
+    //最多28个
+    let transfer_ins =  mint_build.instructions()?.first().unwrap().to_owned();
+    let mint_res = program
+        .request()
+        .instruction(transfer_ins.clone())
+        .instruction(transfer_ins.clone())
+        .instruction(transfer_ins.clone())
+        .send()?;
+    println!("call res {}", mint_res);
+    Ok(())
+}
+
 /***
 
     //test_add_collection()?;
@@ -162,7 +202,8 @@ pub fn update_icon() -> Result<()>{
     //coin::transfer().unwrap();
     //coin::transfer().unwrap();
 */
-mod test {
+#[cfg(test)]
+mod tests {
     use super::*;
     use crate::*;
 
