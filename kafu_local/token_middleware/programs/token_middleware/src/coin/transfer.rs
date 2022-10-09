@@ -19,6 +19,7 @@ use {
     },
 };
 
+/// coin transfer func
 pub fn process_transfer_coin(
     ctx: Context<CoinTransfer>,
     amount: u64,
@@ -36,14 +37,18 @@ pub fn process_transfer_coin(
     Ok(())
 }
 
+/// Some accounts which transfer instruction need
 #[derive(Accounts)]
 pub struct CoinTransfer<'info> {
+    /// resource ata account of transfer
     #[account(mut)]
     pub from_ata: Account<'info,TokenAccount>,
+    /// resource  wallet of transfer
     #[account(mut)]
     pub from: Signer<'info>,
-    ///CHECK: ?
-    pub to: UncheckedAccount<'info>,
+    ///CHECK: destion wallet of transfer
+    pub to: AccountInfo<'info>,
+    /// destion ata account of transfer
     #[account(
     init_if_needed,
     payer = from,
@@ -51,9 +56,14 @@ pub struct CoinTransfer<'info> {
     associated_token::authority = to,
     )]
     pub to_ata: Account<'info,TokenAccount>,
+    /// coin mint account
     pub coin: Account<'info, Mint>,
+    /// spl token program
     pub token_program: Program<'info, Token>,
+    /// associated token program
     pub associated_token_program: Program<'info, AssociatedToken>,
+    /// system program
     pub system_program: Program<'info,System>,
+    /// rent program
     pub rent: Sysvar<'info, Rent>,
 }

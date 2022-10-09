@@ -1,5 +1,7 @@
+/// some  features of coin
 pub mod coin;
 pub mod nft;
+pub mod errors;
 
 use anchor_lang::prelude::*;
 use nft::mint::*;

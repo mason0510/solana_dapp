@@ -1,15 +1,11 @@
 use anchor_lang::error_code;
 
 #[error_code]
-pub enum MarketError {
+pub enum MiddlewareError {
     #[msg("InSufficientFunds")]
     InSufficientFunds,
-    #[msg("NotSupportCoin")]
-    NotSupportCoin,
-    #[msg("NftNotMatched")]
-    NftNotMatched,
-    #[msg("SellerNotMatched")]
-    SellerNotMatched,
+    #[msg("PermissionDenied")]
+    PermissionDenied,
     #[msg("UnknownError")]
     UnknownError,
 }

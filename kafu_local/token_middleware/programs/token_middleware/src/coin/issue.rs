@@ -1,17 +1,5 @@
-/***
- token::mint_to(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            token::MintTo {
-                mint: ctx.accounts.mint.to_account_info(),
-                to: ctx.accounts.user_ata.to_account_info(),
-                authority: ctx.accounts.minter.to_account_info(),
-            },
-        ),
-        1,
-    )?;
-
-*/
+#![deny(missing_docs)]
+//#![deny(warnings)]
 
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program_option::COption;
@@ -33,13 +21,15 @@ use {
         instruction as token_instruction
     },
 };
+use crate::errors::MiddlewareError;
+
+/// increase coin supply
 pub fn process_issue_coin(
     ctx: Context<CoinIssue>,
     amount:u64,
 ) -> Result<()> {
-    msg!("Minting token to token account...");
-    msg!("Mint: {}", &ctx.accounts.mint.to_account_info().key());
-    msg!("Token Address: {}", &ctx.accounts.user_ata.key());
+    msg!("start issue Mint: {}", &ctx.accounts.mint.to_account_info().key());
+    msg!("User ATA Address: {}", &ctx.accounts.user_ata.key());
     token::mint_to(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -54,17 +44,19 @@ pub fn process_issue_coin(
     Ok(())
 }
 
-//todo: delete unused field
+/// Coin issue struct
 #[derive(Accounts)]
 pub struct CoinIssue<'info> {
-    /// CHECK: We're about to create this with Metaplex
+    /// CHECK:
     #[account(mut)]
-    pub user_ata:  UncheckedAccount<'info>,
-    /// CHECK: We're about to create this with Metaplex
-    #[account(mut)]
-    pub mint:  UncheckedAccount<'info>,
+    pub user_ata:  AccountInfo<'info>,
+    /// coin mint accout
+    #[account(constraint = mint.mint_authority == COption::Some(minter.key()) @MiddlewareError::PermissionDenied)]
+    pub mint:  Account<'info,Mint>,
+    /// coin creator
     #[account(mut)]
     pub minter: Signer<'info>,
+    /// spl token program address
     pub token_program: Program<'info, token::Token>,
 
 }

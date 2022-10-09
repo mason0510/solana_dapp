@@ -37,7 +37,6 @@ pub fn mint() -> Result<Pubkey> {
     let mint_build = program
         .request()
         .accounts(token_middleware_accounts::CoinMint{
-            authority: program.payer(),
             metadata: metadata_address,
             user_ata,
             mint: coin_key.pubkey(),

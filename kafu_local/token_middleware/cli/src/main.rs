@@ -76,6 +76,6 @@ fn main() -> Result<()> {
     let _opts = Opts::parse();
    // nft::mint().unwrap();
     // nft::update_authority().unwrap();
-    coin::batch_transfer().unwrap();
+    // coin::batch_transfer().unwrap();
     Ok(())
 }

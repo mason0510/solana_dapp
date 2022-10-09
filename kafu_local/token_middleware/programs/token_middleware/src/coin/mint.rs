@@ -1,3 +1,5 @@
+#![deny(missing_docs)]
+
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::program_option::COption;
 use anchor_spl::associated_token::AssociatedToken;
@@ -18,6 +20,8 @@ use {
         instruction as token_instruction
     },
 };
+
+/// create coin and issue  supply
 pub fn process_mint_coin(
     ctx: Context<CoinMint>,
     metadata_title: String,
@@ -88,6 +92,7 @@ pub fn process_mint_coin(
 
     msg!("Creating metadata account...");
     msg!("Metadata account address: {}", &ctx.accounts.metadata.to_account_info().key());
+    // minter have mint authority and metadata update authority
     invoke(
         &token_instruction::create_metadata_accounts_v2(
             ctx.accounts.token_metadata_program.key(),
@@ -95,7 +100,7 @@ pub fn process_mint_coin(
             ctx.accounts.mint.key(),
             ctx.accounts.minter.key(),
             ctx.accounts.minter.key(),
-            ctx.accounts.authority.key(),
+            ctx.accounts.minter.key(),
             metadata_title,
             metadata_symbol,
             metadata_uri,
@@ -110,7 +115,6 @@ pub fn process_mint_coin(
             ctx.accounts.metadata.to_account_info(),
             ctx.accounts.mint.to_account_info(),
             ctx.accounts.minter.to_account_info(),
-            ctx.accounts.authority.to_account_info(),
         ],
     )?;
     msg!("Token mint process completed successfully.");
@@ -119,14 +123,13 @@ pub fn process_mint_coin(
 }
 
 //当前mint key和ata不能在anchor里面同时创建，待进一步调查，先按照原来逻辑
+
+/// Some accounts which mint instruction need
 #[derive(Accounts)]
-//#[instruction(authority_key: Pubkey)]
 pub struct CoinMint<'info> {
     /// CHECK: We're about to create this with Metaplex
-    pub authority: UncheckedAccount<'info>,
-    /// CHECK: We're about to create this with Metaplex
     #[account(mut)]
-    pub metadata: UncheckedAccount<'info>,
+    pub metadata: AccountInfo<'info>,
     /* #[account(
      init,
      payer = minter,
@@ -135,7 +138,7 @@ pub struct CoinMint<'info> {
      )]*/
     /// CHECK: We're about to create this with Metaplex
     #[account(mut)]
-    pub user_ata:  UncheckedAccount<'info>,
+    pub user_ata:  AccountInfo<'info>,
     /*    #[account(
         init,
         payer = minter,
@@ -143,28 +146,21 @@ pub struct CoinMint<'info> {
         mint::authority = minter,
         mint::freeze_authority = minter
         )]*/
-    /// CHECK: We're about to create this with Metaplex
+    /// coin mint account
     #[account(mut)]
     pub mint:  Signer<'info>,
-    /*    /// CHECK: We're about to create this with Anchor
-        #[account(
-       mut
-        )]
-        pub user_ata:  UncheckedAccount<'info>,
-        /// CHECK: We're about to create this with Anchor
-        #[account(
-     mut
-        )]
-        pub mint:  UncheckedAccount<'info>,*/
-
-
+    /// coin creator
     #[account(mut)]
     pub minter: Signer<'info>,
+    /// rent program
     pub rent: Sysvar<'info, Rent>,
+    /// system program
     pub system_program: Program<'info, System>,
+    /// spl token program
     pub token_program: Program<'info, token::Token>,
     /// CHECK: We're about to create this with Anchor
-    pub token_metadata_program: UncheckedAccount<'info>,
+    pub token_metadata_program: AccountInfo<'info>,
+    /// associated token program
     pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
 
 }
